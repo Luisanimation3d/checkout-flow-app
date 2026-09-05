@@ -5,6 +5,7 @@ import { ProductInfo } from '@/components/ProductInfo'
 import { PurchaseButton } from '@/components/PurchaseButton'
 import type { Product } from '@/types/product'
 import styles from './PDP.module.scss'
+import { PaymentDataForm } from '@/pages/PaymentDataForm'
 
 const product: Product = {
   id: '1',
@@ -22,6 +23,7 @@ const product: Product = {
 
 export const PDP = () => {
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false)
 
   return (
     <div className={styles.pdp}>
@@ -46,9 +48,13 @@ export const PDP = () => {
         />
 
         <div className={styles.pdp__purchase}>
-          <PurchaseButton>Pagar con tarjeta de crédito</PurchaseButton>
+          <PurchaseButton onClick={() => setIsPaymentFormOpen(true)}>
+            Pagar con tarjeta de crédito
+          </PurchaseButton>
         </div>
       </div>
+
+      <PaymentDataForm isOpen={isPaymentFormOpen} onClose={() => setIsPaymentFormOpen(false)} />
     </div>
   )
 }

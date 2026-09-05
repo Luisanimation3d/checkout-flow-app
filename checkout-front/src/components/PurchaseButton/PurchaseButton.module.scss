@@ -25,4 +25,18 @@
   &:active {
     transform: scale(0.98);
   }
+
+  &:disabled {
+    opacity: 0.4;
+    box-shadow: none;
+    cursor: not-allowed;
+
+    &:hover {
+      background: rgba(16, 17, 18, 0.92);
+    }
+
+    &:active {
+      transform: none;
+    }
+  }
 }
