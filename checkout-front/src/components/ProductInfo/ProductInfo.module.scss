@@ -1,0 +1,60 @@
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+
+  &__title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #101112;
+
+    @include respond('lg') {
+      font-size: 32px;
+    }
+  }
+
+  &__descriptionGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__description {
+    font-size: 13px;
+    font-weight: 400;
+    color: #101112;
+    line-height: 150%;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    &--expanded {
+      -webkit-line-clamp: unset;
+      line-clamp: unset;
+      overflow: visible;
+    }
+
+    @include respond('lg') {
+      -webkit-line-clamp: unset;
+      line-clamp: unset;
+      overflow: visible;
+      font-size: 15px;
+    }
+  }
+
+  &__toggle {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #101112;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+}

@@ -1,7 +1,8 @@
 import './App.scss'
+import { PDP } from '@/pages/PDP'
 
 function App() {
-  return <p>hola</p>
+  return <PDP/>
 }
 
 export default App

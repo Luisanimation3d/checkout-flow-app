@@ -1,0 +1,27 @@
+.priceBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #101112;
+  }
+
+  &__price {
+    font-size: 22px;
+    font-weight: 700;
+    color: #101112;
+
+    @include respond('lg') {
+      font-size: 28px;
+    }
+  }
+
+  &__stock {
+    font-size: 12px;
+    font-weight: 400;
+    color: #7e7e7e;
+  }
+}

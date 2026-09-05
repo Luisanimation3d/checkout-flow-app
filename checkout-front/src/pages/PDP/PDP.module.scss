@@ -1,0 +1,50 @@
+.pdp {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  @include respond('lg') {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 56px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 24px 110px;
+
+    @include respond('md') {
+      padding: 32px 32px 120px;
+    }
+
+    @include respond('lg') {
+      padding: 24px 0 0;
+      gap: 32px;
+      justify-content: flex-start;
+    }
+  }
+
+  &__purchase {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 16px;
+    z-index: 20;
+
+    @include respond('md') {
+      left: 32px;
+      right: 32px;
+    }
+
+    @include respond('lg') {
+      position: static;
+      margin-top: 8px;
+    }
+  }
+}
