@@ -10,11 +10,24 @@ interface FloatingSelectOption {
 interface FloatingSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string
   options: FloatingSelectOption[]
+  placeholder?: string
 }
 
-export const FloatingSelect = ({ label, id, options, className, ...props }: FloatingSelectProps) => (
+export const FloatingSelect = ({
+  label,
+  id,
+  options,
+  placeholder,
+  className,
+  ...props
+}: FloatingSelectProps) => (
   <div className={[styles.floatingSelect, className].filter(Boolean).join(' ')}>
     <select id={id} className={styles.floatingSelect__select} {...props}>
+      {placeholder && (
+        <option value="" disabled hidden>
+          {placeholder}
+        </option>
+      )}
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}

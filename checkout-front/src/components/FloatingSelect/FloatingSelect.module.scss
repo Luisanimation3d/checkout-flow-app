@@ -32,6 +32,12 @@
     &:focus {
       border-color: #101112;
     }
+
+    &:disabled {
+      background: #f7f7f8;
+      color: #b5b5ba;
+      cursor: not-allowed;
+    }
   }
 
   &__chevron {
