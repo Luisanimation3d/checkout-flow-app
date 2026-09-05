@@ -1,0 +1,1 @@
+export const CARD_NUMBER_MAX_DIGITS = 16
