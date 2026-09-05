@@ -1,0 +1,109 @@
+.paymentSummary {
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  &__chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(16, 17, 18, 0.08);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    box-shadow: 0 4px 16px rgba(16, 17, 18, 0.06);
+    font-family: inherit;
+    font-size: 13px;
+    color: #4a4a4a;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(16, 17, 18, 0.16);
+    }
+
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  &__chipIcon {
+    display: flex;
+    flex-shrink: 0;
+    font-size: 18px;
+    color: #101112;
+  }
+
+  &__chipText {
+    flex: 1 1 auto;
+    overflow: hidden;
+    font-family: 'Space Mono', monospace;
+    color: #101112;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__chipEdit {
+    flex-shrink: 0;
+    font-size: 15px;
+    color: #8a8a8a;
+  }
+
+  &__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(16, 17, 18, 0.06);
+    background: rgba(247, 247, 248, 0.7);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+  }
+
+  &__line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    color: #101112;
+
+    span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span:last-child {
+      flex: 0 0 auto;
+      font-family: 'Space Mono', monospace;
+      color: #4a4a4a;
+    }
+  }
+
+  &__total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid #e5e5e8;
+    font-size: 16px;
+    font-weight: 700;
+    color: #101112;
+
+    span:last-child {
+      font-family: 'Space Mono', monospace;
+    }
+  }
+}

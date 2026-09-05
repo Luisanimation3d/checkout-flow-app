@@ -1,7 +1,9 @@
 import { RiMapPin2Fill } from 'react-icons/ri'
 import { FloatingInput } from '@/components/FloatingInput'
 import { FloatingSelect } from '@/components/FloatingSelect'
+import { StepHeader } from '@/components/StepHeader'
 import type { DeliveryFormValues } from '@/types/delivery'
+import { COLOMBIA_DEPARTMENTS } from '@/utils/colombiaLocations'
 import { DOCUMENT_TYPES } from '@/utils/documentTypes'
 import { getFieldStatus } from '@/utils/getFieldStatus'
 import { getStatusIcon } from '@/utils/getStatusIcon'
@@ -24,6 +26,11 @@ export const DeliveryForm = ({ values, onChange }: DeliveryFormProps) => {
   const setField = (field: keyof DeliveryFormValues, value: string) =>
     onChange({ ...values, [field]: value })
 
+  const handleDepartmentChange = (department: string) => onChange({ ...values, department, city: '' })
+
+  const cityOptions = COLOMBIA_DEPARTMENTS.find((department) => department.value === values.department)
+    ?.cities ?? []
+
   const nameStatus = getFieldStatus(
     values.fullName.trim().length >= MIN_NAME_LENGTH,
     isFullNameValid(values.fullName),
@@ -38,22 +45,9 @@ export const DeliveryForm = ({ values, onChange }: DeliveryFormProps) => {
     isNonEmptyText(values.address, MIN_ADDRESS_LENGTH),
   )
 
-  const cityStatus = getFieldStatus(values.city.trim().length > 0, isNonEmptyText(values.city))
-
-  const departmentStatus = getFieldStatus(
-    values.department.trim().length > 0,
-    isNonEmptyText(values.department),
-  )
-
   return (
     <div className={styles.deliveryForm}>
-      <div className={styles.deliveryForm__header}>
-        <div className={styles.deliveryForm__badge}>
-          <RiMapPin2Fill />
-        </div>
-        <h3 className={styles.deliveryForm__title}>Datos de entrega</h3>
-        <p className={styles.deliveryForm__subtitle}>¿A dónde enviamos tu pedido?</p>
-      </div>
+      <StepHeader icon={<RiMapPin2Fill />} title="Datos de entrega" subtitle="¿A dónde enviamos tu pedido?" />
 
       <FloatingInput
         id="fullName"
@@ -113,26 +107,25 @@ export const DeliveryForm = ({ values, onChange }: DeliveryFormProps) => {
       />
 
       <div className={styles.deliveryForm__row}>
-        <FloatingInput
-          id="city"
-          label="Ciudad"
-          autoComplete="address-level2"
-          value={values.city}
-          status={cityStatus}
-          helperText="Requerido"
-          trailingIcon={getStatusIcon(cityStatus)}
-          onChange={(event) => setField('city', event.target.value)}
-        />
-
-        <FloatingInput
+        <FloatingSelect
           id="department"
           label="Departamento"
-          autoComplete="address-level1"
+          placeholder="Selecciona"
+          options={COLOMBIA_DEPARTMENTS}
           value={values.department}
-          status={departmentStatus}
-          helperText="Requerido"
-          trailingIcon={getStatusIcon(departmentStatus)}
-          onChange={(event) => setField('department', event.target.value)}
+          autoComplete="address-level1"
+          onChange={(event) => handleDepartmentChange(event.target.value)}
+        />
+
+        <FloatingSelect
+          id="city"
+          label="Ciudad"
+          placeholder="Selecciona"
+          options={cityOptions}
+          value={values.city}
+          autoComplete="address-level2"
+          disabled={!values.department}
+          onChange={(event) => setField('city', event.target.value)}
         />
       </div>
     </div>

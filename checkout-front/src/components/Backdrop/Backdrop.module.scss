@@ -1,0 +1,73 @@
+.backdrop {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+
+  @include respond('lg') {
+    align-items: center;
+    padding: 24px;
+  }
+
+  &__sheet {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    height: 90svh;
+    padding: 40px 24px 24px;
+    background: #fff;
+    border-radius: 25px 25px 0 0;
+
+    @include respond('lg') {
+      width: 420px;
+      height: auto;
+      max-height: 85svh;
+      padding: 32px;
+      border-radius: 24px;
+    }
+  }
+
+  &__draggable {
+    display: block;
+    width: 100px;
+    height: 4px;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    background-color: #d0d0d3;
+    border-radius: 50px;
+    transform: translateX(-50%);
+    touch-action: none;
+    cursor: grab;
+
+    @include respond('lg') {
+      display: none;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 24px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 4px;
+    overflow-y: auto;
+  }
+
+  &__footer {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding-top: 32px;
+  }
+}
