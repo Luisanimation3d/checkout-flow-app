@@ -6,4 +6,5 @@ export interface Product {
   currency: string
   stock: number
   images: string[]
+  deliveryFee: number
 }
