@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Result } from '../../shared/core/result';
 import type { Delivery } from '../domain/delivery';
 import {
@@ -11,6 +11,8 @@ import { InvalidDeliveryDataError } from '../domain/invalid-delivery-data.error'
 
 @Injectable()
 export class CreateDeliveryUseCase {
+  private readonly logger = new Logger(CreateDeliveryUseCase.name);
+
   constructor(
     @Inject(DELIVERY_REPOSITORY)
     private readonly deliveryRepository: DeliveryRepositoryPort,
@@ -30,6 +32,7 @@ export class CreateDeliveryUseCase {
       department: input.department,
       status: 'PENDING',
     });
+    this.logger.log(`Entrega creada — id=${delivery.id} ciudad=${delivery.city}`);
 
     return Result.ok(delivery);
   }

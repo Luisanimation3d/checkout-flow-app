@@ -1,34 +1,35 @@
 import { useEffect } from 'react'
 import { ProductCard, ProductCardSkeleton } from '@/components/ProductCard'
-import { useFetch } from '@/hooks/useFetch'
-import type { Product } from '@/types/product'
-import { API_URL } from '@/utils/apiUrl'
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { fetchProducts } from '@/store/slices/productsSlice'
 import styles from './PLP.module.scss'
 
 const SKELETON_COUNT = 6
 
 export const PLP = () => {
-  const { data: products, loading, error, get } = useFetch<Product[]>(API_URL)
+  const dispatch = useAppDispatch()
+  const { items: products, listStatus, listError } = useAppSelector((state) => state.products)
+  const loading = listStatus === 'loading' || listStatus === 'idle'
 
   useEffect(() => {
-    get('/products').catch(() => {})
-  }, [get])
+    dispatch(fetchProducts())
+  }, [dispatch])
 
   return (
     <div className={styles.plp}>
       <header className={styles.plp__header}>
         <h1 className={styles.plp__title}>Tienda</h1>
         <p className={styles.plp__subtitle}>
-          {loading ? 'Cargando productos…' : `${products?.length ?? 0} productos disponibles`}
+          {loading ? 'Cargando productos…' : `${products.length} productos disponibles`}
         </p>
       </header>
 
-      {error && <p className={styles.plp__error}>No pudimos cargar los productos. Intenta de nuevo.</p>}
+      {listError && <p className={styles.plp__error}>No pudimos cargar los productos. Intenta de nuevo.</p>}
 
       <div className={styles.plp__grid}>
         {loading
           ? Array.from({ length: SKELETON_COUNT }).map((_, index) => <ProductCardSkeleton key={index} />)
-          : products?.map((product) => <ProductCard key={product.id} product={product} />)}
+          : products.map((product) => <ProductCard key={product.id} product={product} />)}
       </div>
     </div>
   )

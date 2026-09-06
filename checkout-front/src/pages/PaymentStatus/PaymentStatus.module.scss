@@ -41,10 +41,6 @@
       background: rgba(26, 158, 92, 0.94);
     }
 
-    &--warning {
-      background: rgba(217, 145, 20, 0.94);
-    }
-
     &--danger {
       background: rgba(224, 72, 62, 0.94);
     }
@@ -110,37 +106,6 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-  }
-
-  // Herramienta temporal de desarrollo, no forma parte del diseño final.
-  &__preview {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    position: fixed;
-    left: 50%;
-    bottom: 16px;
-    z-index: 10;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: rgba(16, 17, 18, 0.85);
-    backdrop-filter: blur(10px);
-    transform: translateX(-50%);
-    font-size: 11px;
-
-    span {
-      color: rgba(255, 255, 255, 0.5);
-    }
-
-    button {
-      padding: 6px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 999px;
-      background: none;
-      color: #fff;
-      font-size: 11px;
-      cursor: pointer;
-    }
   }
 }
 

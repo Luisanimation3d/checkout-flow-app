@@ -5,6 +5,7 @@ import { CardForm } from '@/components/CardForm'
 import { CreditCard } from '@/components/CreditCard'
 import { DeliveryForm } from '@/components/DeliveryForm'
 import { PurchaseButton } from '@/components/PurchaseButton'
+import type { PaymentDataFormStep as Step } from '@/store/slices/checkoutSlice'
 import type { CardField, CardFormValues } from '@/types/card'
 import type { DeliveryFormValues } from '@/types/delivery'
 import { DOCUMENT_TYPES } from '@/utils/documentTypes'
@@ -12,15 +13,19 @@ import { isCardFormValid } from '@/utils/isCardFormValid'
 import { isDeliveryFormValid } from '@/utils/isDeliveryFormValid'
 import styles from './PaymentDataForm.module.scss'
 
-export type PaymentDataFormStep = 'card' | 'delivery'
-type Step = PaymentDataFormStep
-
-const INITIAL_CARD_VALUES: CardFormValues = { cardNumber: '', name: '', expiry: '', cvv: '' }
+const INITIAL_CARD_VALUES: CardFormValues = {
+  cardNumber: '',
+  name: '',
+  expiry: '',
+  cvv: '',
+  installments: 1,
+}
 const INITIAL_DELIVERY_VALUES: DeliveryFormValues = {
   fullName: '',
   documentType: DOCUMENT_TYPES[0].value,
   documentId: '',
   phone: '',
+  email: '',
   address: '',
   city: '',
   department: '',

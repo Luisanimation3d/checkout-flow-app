@@ -4,74 +4,65 @@ import { Header } from '@/components/Header'
 import { ProductGallery } from '@/components/ProductGallery'
 import { ProductInfo } from '@/components/ProductInfo'
 import { PurchaseButton } from '@/components/PurchaseButton'
-import { useFetch } from '@/hooks/useFetch'
-import type { CardFormValues } from '@/types/card'
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { closeCheckout, completePaymentForm, openCheckout, resetCheckout } from '@/store/slices/checkoutSlice'
+import type { PaymentDataFormStep } from '@/store/slices/checkoutSlice'
+import { fetchProductById } from '@/store/slices/productsSlice'
+import { resetTransaction, submitPayment } from '@/store/slices/transactionSlice'
 import type { RetryCheckoutRouteState, PaymentStatusRouteState } from '@/types/checkoutRouteState'
-import type { DeliveryFormValues } from '@/types/delivery'
-import type { Product } from '@/types/product'
-import { API_URL } from '@/utils/apiUrl'
-import { calculateDeliveryFee } from '@/utils/calculateDeliveryFee'
-import { BASE_FEE } from '@/utils/checkoutFees'
-import { generateTransactionId } from '@/utils/generateTransactionId'
-import { getOrderTotal } from '@/utils/getOrderTotal'
 import styles from './PDP.module.scss'
 import { PDPSkeleton } from './PDPSkeleton'
 import { PaymentDataForm } from '@/pages/PaymentDataForm'
-import type { PaymentDataFormStep } from '@/pages/PaymentDataForm'
 import { PaymentSummary } from '@/pages/PaymentSummary'
-
-type CheckoutStep = 'closed' | 'payment' | 'summary'
 
 export const PDP = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const retryState = location.state as RetryCheckoutRouteState | null
+  const dispatch = useAppDispatch()
 
-  const { data: product, loading, error, get } = useFetch<Product>(API_URL)
+  const { selected: product, selectedStatus, selectedError } = useAppSelector((state) => state.products)
+  const { step: checkoutStep, paymentFormStep, card, delivery } = useAppSelector((state) => state.checkout)
+  const { phase: transactionPhase, error: transactionErrorMessage } = useAppSelector((state) => state.transaction)
 
   const [isFavorite, setIsFavorite] = useState(false)
-  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>(retryState ? 'payment' : 'closed')
-  const [paymentFormStep, setPaymentFormStep] = useState<PaymentDataFormStep>('card')
-  const [checkoutData, setCheckoutData] = useState<{ card: CardFormValues; delivery: DeliveryFormValues } | null>(
-    null,
-  )
+  const loading = selectedStatus === 'loading' || selectedStatus === 'idle'
 
   useEffect(() => {
-    if (id) get(`/products/${id}`).catch(() => {})
-  }, [id, get])
+    if (!id) return
+    dispatch(resetCheckout())
+    dispatch(resetTransaction())
+    dispatch(fetchProductById(id))
+    if (retryState) dispatch(openCheckout('card'))
+    // Solo debe correr al montar (o al cambiar de producto): retryState no debe
+    // volver a disparar esto en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, dispatch])
 
   useEffect(() => {
-    if (error) navigate('/', { replace: true })
-  }, [error, navigate])
+    if (selectedError) navigate('/', { replace: true })
+  }, [selectedError, navigate])
 
-  if (loading || (!product && !error)) return <PDPSkeleton />
+  if (loading || (!product && !selectedError)) return <PDPSkeleton />
   if (!product) return null
 
-  const editCheckoutData = (step: PaymentDataFormStep) => {
-    setPaymentFormStep(step)
-    setCheckoutStep('payment')
-  }
+  const editCheckoutData = (step: PaymentDataFormStep) => dispatch(openCheckout(step))
 
-  const handleConfirmPayment = () => {
-    if (!checkoutData) return
+  const handleConfirmPayment = async () => {
+    if (!card || !delivery) return
 
-    const total = getOrderTotal(
-      product.price,
-      BASE_FEE,
-      calculateDeliveryFee(product.deliveryFee, checkoutData.delivery.city),
-    )
+    const result = await dispatch(submitPayment({ productId: product.id, card, delivery }))
 
-    const routeState: PaymentStatusRouteState = {
-      productId: product.id,
-      transactionId: generateTransactionId(),
-      total,
-      currency: product.currency,
-      card: checkoutData.card,
-      delivery: checkoutData.delivery,
+    if (submitPayment.fulfilled.match(result)) {
+      const routeState: PaymentStatusRouteState = {
+        productId: product.id,
+        transactionId: result.payload.id,
+        card,
+        delivery,
+      }
+      navigate('/status', { state: routeState })
     }
-
-    navigate('/status', { state: routeState })
   }
 
   return (
@@ -107,25 +98,26 @@ export const PDP = () => {
       <PaymentDataForm
         isOpen={checkoutStep === 'payment'}
         initialStep={paymentFormStep}
-        initialCardValues={retryState?.retryCard}
-        initialDeliveryValues={retryState?.retryDelivery}
-        onClose={() => setCheckoutStep('closed')}
-        onComplete={(card, delivery) => {
-          setCheckoutData({ card, delivery })
-          setCheckoutStep('summary')
-        }}
+        initialCardValues={retryState?.retryCard ?? card ?? undefined}
+        initialDeliveryValues={retryState?.retryDelivery ?? delivery ?? undefined}
+        onClose={() => dispatch(closeCheckout())}
+        onComplete={(nextCard, nextDelivery) =>
+          dispatch(completePaymentForm({ card: nextCard, delivery: nextDelivery }))
+        }
       />
 
-      {checkoutData && (
+      {card && delivery && (
         <PaymentSummary
           isOpen={checkoutStep === 'summary'}
-          onClose={() => setCheckoutStep('closed')}
+          onClose={() => dispatch(closeCheckout())}
           onConfirmPayment={handleConfirmPayment}
           onEditCard={() => editCheckoutData('card')}
           onEditDelivery={() => editCheckoutData('delivery')}
           product={product}
-          card={checkoutData.card}
-          delivery={checkoutData.delivery}
+          card={card}
+          delivery={delivery}
+          isSubmitting={transactionPhase === 'submitting'}
+          submitError={transactionErrorMessage}
         />
       )}
     </div>

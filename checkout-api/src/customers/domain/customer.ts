@@ -6,4 +6,5 @@ export interface Customer {
   documentType: DocumentType;
   documentId: string;
   phone: string;
+  email: string;
 }

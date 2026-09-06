@@ -17,5 +17,6 @@ import { ProductsController } from './products.controller';
     ProductSeeder,
     { provide: PRODUCT_REPOSITORY, useClass: ProductTypeOrmRepository },
   ],
+  exports: [PRODUCT_REPOSITORY],
 })
 export class ProductsModule {}

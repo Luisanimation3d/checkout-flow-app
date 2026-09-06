@@ -3,6 +3,7 @@ export interface DeliveryFormValues {
   documentType: string
   documentId: string
   phone: string
+  email: string
   address: string
   city: string
   department: string

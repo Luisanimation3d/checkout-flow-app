@@ -1,5 +1,6 @@
 import type { DeliveryFormValues } from '@/types/delivery'
 import { isDocumentIdValid } from '@/utils/isDocumentIdValid'
+import { isEmailValid } from '@/utils/isEmailValid'
 import { isFullNameValid } from '@/utils/isFullNameValid'
 import { isNonEmptyText } from '@/utils/isNonEmptyText'
 import { isPhoneValid } from '@/utils/isPhoneValid'
@@ -10,6 +11,7 @@ export const isDeliveryFormValid = ({
   fullName,
   documentId,
   phone,
+  email,
   address,
   city,
   department,
@@ -17,6 +19,7 @@ export const isDeliveryFormValid = ({
   isFullNameValid(fullName) &&
   isDocumentIdValid(documentId) &&
   isPhoneValid(phone) &&
+  isEmailValid(email) &&
   isNonEmptyText(address, MIN_ADDRESS_LENGTH) &&
   isNonEmptyText(city) &&
   isNonEmptyText(department)

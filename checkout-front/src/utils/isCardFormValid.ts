@@ -5,7 +5,7 @@ import { isCvvValid } from '@/utils/isCvvValid'
 import { isExpiryDateValid } from '@/utils/isExpiryDateValid'
 import { luhnCheck } from '@/utils/luhnCheck'
 
-export const isCardFormValid = ({ cardNumber, name, expiry, cvv }: CardFormValues) => {
+export const isCardFormValid = ({ cardNumber, name, expiry, cvv, installments }: CardFormValues) => {
   const cardNumberDigits = cardNumber.replace(/\D/g, '')
 
   return (
@@ -13,6 +13,8 @@ export const isCardFormValid = ({ cardNumber, name, expiry, cvv }: CardFormValue
     luhnCheck(cardNumberDigits) &&
     isCardholderNameValid(name) &&
     isExpiryDateValid(expiry) &&
-    isCvvValid(cvv)
+    isCvvValid(cvv) &&
+    installments >= 1 &&
+    installments <= 36
   )
 }
