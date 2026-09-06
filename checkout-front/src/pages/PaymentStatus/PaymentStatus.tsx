@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiLoader4Line, RiStore2Line } from 'react-icons/ri'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -44,10 +44,32 @@ const STATUS_CONFIG: Record<TransactionStatus, StatusConfig> = {
 export const PaymentStatus = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const routeState = location.state as PaymentStatusRouteState | null
   const dispatch = useAppDispatch()
 
   const transaction = useAppSelector((state) => state.transaction.current)
+  const checkoutCard = useAppSelector((state) => state.checkout.card)
+  const checkoutDelivery = useAppSelector((state) => state.checkout.delivery)
+
+  // Resiliencia al refresh: si location.state se perdió (pestaña nueva, o el
+  // navegador no conservó el history state), reconstruimos lo mismo desde el
+  // estado persistido en Redux/localStorage — la transacción y el checkout
+  // que ya se completó siguen ahí.
+  const routeState = useMemo<PaymentStatusRouteState | null>(() => {
+    const fromRouter = location.state as PaymentStatusRouteState | null
+    if (fromRouter) return fromRouter
+
+    if (transaction && checkoutCard && checkoutDelivery) {
+      return {
+        productId: transaction.productId,
+        transactionId: transaction.id,
+        card: checkoutCard,
+        delivery: checkoutDelivery,
+      }
+    }
+
+    return null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
 
   const status: TransactionStatus =
     transaction?.status === 'APPROVED'

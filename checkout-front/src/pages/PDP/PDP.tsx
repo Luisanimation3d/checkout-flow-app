@@ -5,7 +5,13 @@ import { ProductGallery } from '@/components/ProductGallery'
 import { ProductInfo } from '@/components/ProductInfo'
 import { PurchaseButton } from '@/components/PurchaseButton'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { closeCheckout, completePaymentForm, openCheckout, resetCheckout } from '@/store/slices/checkoutSlice'
+import {
+  closeCheckout,
+  completePaymentForm,
+  openCheckout,
+  resetCheckout,
+  setCheckoutProduct,
+} from '@/store/slices/checkoutSlice'
 import type { PaymentDataFormStep } from '@/store/slices/checkoutSlice'
 import { fetchProductById } from '@/store/slices/productsSlice'
 import { resetTransaction, submitPayment } from '@/store/slices/transactionSlice'
@@ -23,7 +29,13 @@ export const PDP = () => {
   const dispatch = useAppDispatch()
 
   const { selected: product, selectedStatus, selectedError } = useAppSelector((state) => state.products)
-  const { step: checkoutStep, paymentFormStep, card, delivery } = useAppSelector((state) => state.checkout)
+  const {
+    productId: checkoutProductId,
+    step: checkoutStep,
+    paymentFormStep,
+    card,
+    delivery,
+  } = useAppSelector((state) => state.checkout)
   const { phase: transactionPhase, error: transactionErrorMessage } = useAppSelector((state) => state.transaction)
 
   const [isFavorite, setIsFavorite] = useState(false)
@@ -31,12 +43,30 @@ export const PDP = () => {
 
   useEffect(() => {
     if (!id) return
-    dispatch(resetCheckout())
-    dispatch(resetTransaction())
+
+    // Un refresh remonta este componente con el MISMO id: en ese caso no hay
+    // que limpiar el checkout/transacción persistidos, hay que preservarlos
+    // (resiliencia al refresh). Sí se limpia si el usuario pasó a otro producto,
+    // o si la transacción anterior ya llegó a un estado terminal (resolved/error)
+    // — p. ej. al volver desde PaymentStatus con "Volver al producto": ahí el
+    // checkout ya se completó y debe verse limpio, no reabrir el resumen viejo.
+    const isDifferentProduct = checkoutProductId !== null && checkoutProductId !== id
+    const previousCheckoutConcluded = transactionPhase === 'resolved' || transactionPhase === 'error'
+
+    if (isDifferentProduct || previousCheckoutConcluded) {
+      dispatch(resetCheckout())
+      dispatch(resetTransaction())
+    } else if (checkoutStep === 'summary' && !card?.cardNumber) {
+      // El número de tarjeta nunca se persiste (ver store/persistence.ts): si
+      // el resumen se recupera tras un refresh, el chip de tarjeta quedaría
+      // vacío. Mejor pedirla de nuevo antes de dejar pagar.
+      dispatch(openCheckout('card'))
+    }
+    dispatch(setCheckoutProduct(id))
     dispatch(fetchProductById(id))
     if (retryState) dispatch(openCheckout('card'))
-    // Solo debe correr al montar (o al cambiar de producto): retryState no debe
-    // volver a disparar esto en cada render.
+    // Solo debe correr al montar (o al cambiar de producto): los valores leídos
+    // arriba no deben volver a disparar esto en cada render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, dispatch])
 

@@ -6,9 +6,9 @@ import { API_URL } from '@/utils/apiUrl'
 import { logger } from '@/utils/logger'
 import { tokenizeCard } from '@/utils/wompi'
 
-type TransactionPhase = 'idle' | 'submitting' | 'polling' | 'resolved' | 'error'
+export type TransactionPhase = 'idle' | 'submitting' | 'polling' | 'resolved' | 'error'
 
-interface TransactionState {
+export interface TransactionState {
   current: Transaction | null
   phase: TransactionPhase
   error: string | null

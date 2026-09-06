@@ -5,7 +5,8 @@ import type { DeliveryFormValues } from '@/types/delivery'
 export type CheckoutStep = 'closed' | 'payment' | 'summary'
 export type PaymentDataFormStep = 'card' | 'delivery'
 
-interface CheckoutState {
+export interface CheckoutState {
+  productId: string | null
   step: CheckoutStep
   paymentFormStep: PaymentDataFormStep
   card: CardFormValues | null
@@ -13,6 +14,7 @@ interface CheckoutState {
 }
 
 const initialState: CheckoutState = {
+  productId: null,
   step: 'closed',
   paymentFormStep: 'card',
   card: null,
@@ -23,6 +25,11 @@ const checkoutSlice = createSlice({
   name: 'checkout',
   initialState,
   reducers: {
+    // Asocia el checkout persistido al producto actual: PDP la usa para saber
+    // si debe limpiar el estado (producto distinto) o preservarlo (refresh).
+    setCheckoutProduct(state, action: PayloadAction<string>) {
+      state.productId = action.payload
+    },
     openCheckout(state, action: PayloadAction<PaymentDataFormStep>) {
       state.paymentFormStep = action.payload
       state.step = 'payment'
@@ -48,6 +55,7 @@ const checkoutSlice = createSlice({
 })
 
 export const {
+  setCheckoutProduct,
   openCheckout,
   closeCheckout,
   setPaymentFormStep,
