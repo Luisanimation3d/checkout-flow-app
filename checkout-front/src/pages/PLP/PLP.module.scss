@@ -30,6 +30,12 @@
     color: #7e7e7e;
   }
 
+  &__error {
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #e0483e;
+  }
+
   &__grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

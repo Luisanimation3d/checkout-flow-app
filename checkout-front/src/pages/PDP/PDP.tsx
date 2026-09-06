@@ -4,15 +4,18 @@ import { Header } from '@/components/Header'
 import { ProductGallery } from '@/components/ProductGallery'
 import { ProductInfo } from '@/components/ProductInfo'
 import { PurchaseButton } from '@/components/PurchaseButton'
+import { useFetch } from '@/hooks/useFetch'
 import type { CardFormValues } from '@/types/card'
 import type { RetryCheckoutRouteState, PaymentStatusRouteState } from '@/types/checkoutRouteState'
 import type { DeliveryFormValues } from '@/types/delivery'
+import type { Product } from '@/types/product'
+import { API_URL } from '@/utils/apiUrl'
 import { calculateDeliveryFee } from '@/utils/calculateDeliveryFee'
 import { BASE_FEE } from '@/utils/checkoutFees'
 import { generateTransactionId } from '@/utils/generateTransactionId'
 import { getOrderTotal } from '@/utils/getOrderTotal'
-import { findProductById } from '@/utils/products'
 import styles from './PDP.module.scss'
+import { PDPSkeleton } from './PDPSkeleton'
 import { PaymentDataForm } from '@/pages/PaymentDataForm'
 import type { PaymentDataFormStep } from '@/pages/PaymentDataForm'
 import { PaymentSummary } from '@/pages/PaymentSummary'
@@ -25,7 +28,7 @@ export const PDP = () => {
   const location = useLocation()
   const retryState = location.state as RetryCheckoutRouteState | null
 
-  const product = findProductById(id)
+  const { data: product, loading, error, get } = useFetch<Product>(API_URL)
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>(retryState ? 'payment' : 'closed')
@@ -35,9 +38,14 @@ export const PDP = () => {
   )
 
   useEffect(() => {
-    if (!product) navigate('/', { replace: true })
-  }, [product, navigate])
+    if (id) get(`/products/${id}`).catch(() => {})
+  }, [id, get])
 
+  useEffect(() => {
+    if (error) navigate('/', { replace: true })
+  }, [error, navigate])
+
+  if (loading || (!product && !error)) return <PDPSkeleton />
   if (!product) return null
 
   const editCheckoutData = (step: PaymentDataFormStep) => {
