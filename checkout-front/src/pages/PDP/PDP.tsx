@@ -1,43 +1,34 @@
-import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Header } from '@/components/Header'
 import { ProductGallery } from '@/components/ProductGallery'
 import { ProductInfo } from '@/components/ProductInfo'
 import { PurchaseButton } from '@/components/PurchaseButton'
+import { useFetch } from '@/hooks/useFetch'
 import type { CardFormValues } from '@/types/card'
 import type { RetryCheckoutRouteState, PaymentStatusRouteState } from '@/types/checkoutRouteState'
 import type { DeliveryFormValues } from '@/types/delivery'
 import type { Product } from '@/types/product'
+import { API_URL } from '@/utils/apiUrl'
 import { calculateDeliveryFee } from '@/utils/calculateDeliveryFee'
 import { BASE_FEE } from '@/utils/checkoutFees'
 import { generateTransactionId } from '@/utils/generateTransactionId'
 import { getOrderTotal } from '@/utils/getOrderTotal'
 import styles from './PDP.module.scss'
+import { PDPSkeleton } from './PDPSkeleton'
 import { PaymentDataForm } from '@/pages/PaymentDataForm'
 import type { PaymentDataFormStep } from '@/pages/PaymentDataForm'
 import { PaymentSummary } from '@/pages/PaymentSummary'
 
-const product: Product = {
-  id: '1',
-  title: 'Wireless Earbuds Pro',
-  description:
-    'Audífonos inalámbricos de última generación con cancelación activa de ruido (ANC) de doble micrófono, que bloquea el ruido ambiental para una experiencia de audio inmersiva. Su estuche de carga compacto ofrece hasta 30 horas de batería total (6 horas en los audífonos + 24 horas adicionales en el estuche), con carga rápida que te da 1 hora de uso con solo 10 minutos de carga. Resistencia al agua y sudor certificada IPX5, controles táctiles intuitivos, y conexión Bluetooth 5.3 de baja latencia, perfecta para llamadas, música y hasta gaming móvil sin retrasos perceptibles.',
-  price: 189000,
-  currency: 'COP',
-  stock: 8,
-  deliveryFee: 8000,
-  images: [
-    'https://images.unsplash.com/photo-1783890848515-c0dc28b25ef2?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fHdpcmVsZXNzJTIwZWFyYnVkc3xlbnwwfDJ8MHx8fDA%3D',
-    'https://images.unsplash.com/photo-1783890848512-f5fa2dba2d5d?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  ],
-}
-
 type CheckoutStep = 'closed' | 'payment' | 'summary'
 
 export const PDP = () => {
+  const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const retryState = location.state as RetryCheckoutRouteState | null
+
+  const { data: product, loading, error, get } = useFetch<Product>(API_URL)
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>(retryState ? 'payment' : 'closed')
@@ -45,6 +36,17 @@ export const PDP = () => {
   const [checkoutData, setCheckoutData] = useState<{ card: CardFormValues; delivery: DeliveryFormValues } | null>(
     null,
   )
+
+  useEffect(() => {
+    if (id) get(`/products/${id}`).catch(() => {})
+  }, [id, get])
+
+  useEffect(() => {
+    if (error) navigate('/', { replace: true })
+  }, [error, navigate])
+
+  if (loading || (!product && !error)) return <PDPSkeleton />
+  if (!product) return null
 
   const editCheckoutData = (step: PaymentDataFormStep) => {
     setPaymentFormStep(step)
@@ -61,6 +63,7 @@ export const PDP = () => {
     )
 
     const routeState: PaymentStatusRouteState = {
+      productId: product.id,
       transactionId: generateTransactionId(),
       total,
       currency: product.currency,
@@ -79,6 +82,7 @@ export const PDP = () => {
         overlay={
           <Header
             isFavorite={isFavorite}
+            onBack={() => navigate('/')}
             onToggleFavorite={() => setIsFavorite((prev) => !prev)}
           />
         }
@@ -94,8 +98,8 @@ export const PDP = () => {
         />
 
         <div className={styles.pdp__purchase}>
-          <PurchaseButton onClick={() => editCheckoutData('card')}>
-            Pagar con tarjeta de crédito
+          <PurchaseButton disabled={product.stock === 0} onClick={() => editCheckoutData('card')}>
+            {product.stock === 0 ? 'Agotado' : 'Pagar con tarjeta de crédito'}
           </PurchaseButton>
         </div>
       </div>

@@ -1,0 +1,10 @@
+.productCardSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__imageWrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+}

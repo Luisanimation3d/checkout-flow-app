@@ -65,15 +65,15 @@ export const PaymentStatus = () => {
 
   if (!routeState) return null
 
-  const { transactionId, total, currency, card, delivery } = routeState
+  const { productId, transactionId, total, currency, card, delivery } = routeState
   const { icon, title, subtitle, tone } = STATUS_CONFIG[status]
   const isProcessing = status === 'processing'
 
-  const handleBackToStore = () => navigate('/')
+  const handleBackToProduct = () => navigate(`/product/${productId}`)
 
   const handleRetry = () => {
     const retryState: RetryCheckoutRouteState = { retryCard: card, retryDelivery: delivery }
-    navigate('/', { state: retryState })
+    navigate(`/product/${productId}`, { state: retryState })
   }
 
   return (
@@ -98,8 +98,8 @@ export const PaymentStatus = () => {
         <div className={styles.paymentStatus__footer}>
           {status === 'failed' && <PurchaseButton onClick={handleRetry}>Reintentar pago</PurchaseButton>}
 
-          <button type="button" className={styles.paymentStatus__secondary} onClick={handleBackToStore}>
-            <RiStore2Line /> Volver a la tienda
+          <button type="button" className={styles.paymentStatus__secondary} onClick={handleBackToProduct}>
+            <RiStore2Line /> Volver al producto
           </button>
         </div>
       )}
