@@ -28,6 +28,7 @@ const config: Config = {
     '^@nestjs/common$': '<rootDir>/test/mocks/nestjs-common.mock.ts',
     '^@nestjs/config$': '<rootDir>/test/mocks/nestjs-config.mock.ts',
     '^@nestjs/typeorm$': '<rootDir>/test/mocks/nestjs-typeorm.mock.ts',
+    '^@nestjs/swagger$': '<rootDir>/test/mocks/nestjs-swagger.mock.ts',
   },
   collectCoverageFrom: [
     'src/**/*.(t|j)s',
