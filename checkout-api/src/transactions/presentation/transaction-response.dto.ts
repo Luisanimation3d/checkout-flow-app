@@ -31,7 +31,7 @@ export class TransactionResponseDto {
   status: TransactionStatus;
 
   @ApiProperty({ example: '15625-1699999999-12345', nullable: true })
-  wompiTransactionId: string | null;
+  gatewayTransactionId: string | null;
 
   @ApiProperty({ example: null, nullable: true })
   statusMessage: string | null;

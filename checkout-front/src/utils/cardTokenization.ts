@@ -12,31 +12,31 @@ export interface TokenizeCardInput {
 
 let cachedPublicKeyPem: string | null = null
 
-// El sandbox UAT de Wompi no habilita CORS, así que estas dos llamadas pasan
-// por nuestro backend (que sí puede llamar a Wompi sin restricción de origen).
+// El sandbox UAT del proveedor de pagos no habilita CORS, así que estas dos llamadas pasan
+// por nuestro backend (que sí puede llamar al proveedor de pagos sin restricción de origen).
 // La tarjeta sigue sin llegar en texto plano a nuestro servidor: se cifra (JWE)
 // acá mismo, en el navegador, y lo único que viaja por nuestro backend es el
-// payload ya cifrado más el token que Wompi devuelve.
+// payload ya cifrado más el token que el proveedor de pagos devuelve.
 const getTokenizationPublicKey = async (): Promise<string> => {
   if (cachedPublicKeyPem) return cachedPublicKeyPem
 
-  logger.info('wompi', 'GET /tokenization/public-key — solicitando llave pública')
+  logger.info('card-tokenization', 'GET /tokenization/public-key — solicitando llave pública')
   const response = await fetch(`${API_URL}/tokenization/public-key`)
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    logger.error('wompi', `GET /tokenization/public-key falló con status ${response.status}`, body)
+    logger.error('card-tokenization', `GET /tokenization/public-key falló con status ${response.status}`, body)
     throw new Error(body?.message ?? 'No pudimos preparar el cifrado de la tarjeta. Intenta de nuevo.')
   }
 
   const body = await response.json()
   cachedPublicKeyPem = body.publicKey as string
-  logger.info('wompi', 'Llave pública de tokenización obtenida (cacheada)')
+  logger.info('card-tokenization', 'Llave pública de tokenización obtenida (cacheada)')
   return cachedPublicKeyPem
 }
 
 export const tokenizeCard = async (input: TokenizeCardInput): Promise<string> => {
-  logger.info('wompi', `Tokenizando tarjeta •••• ${input.number.slice(-4)}`)
+  logger.info('card-tokenization', `Tokenizando tarjeta •••• ${input.number.slice(-4)}`)
 
   const publicKeyPem = await getTokenizationPublicKey()
   const publicKey = await importSPKI(publicKeyPem, 'RSA-OAEP-256')
@@ -51,7 +51,7 @@ export const tokenizeCard = async (input: TokenizeCardInput): Promise<string> =>
     .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM' })
     .encrypt(publicKey)
 
-  logger.info('wompi', 'POST /tokenization/card — enviando payload cifrado (JWE)')
+  logger.info('card-tokenization', 'POST /tokenization/card — enviando payload cifrado (JWE)')
   const response = await fetch(`${API_URL}/tokenization/card`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,10 +61,10 @@ export const tokenizeCard = async (input: TokenizeCardInput): Promise<string> =>
   const body = await response.json()
 
   if (!response.ok) {
-    logger.error('wompi', `POST /tokenization/card falló con status ${response.status}`, body)
+    logger.error('card-tokenization', `POST /tokenization/card falló con status ${response.status}`, body)
     throw new Error(body?.message ?? 'La tarjeta fue rechazada al tokenizar. Verifica los datos.')
   }
 
-  logger.info('wompi', `Tarjeta tokenizada — token=${body.token}`)
+  logger.info('card-tokenization', `Tarjeta tokenizada — token=${body.token}`)
   return body.token as string
 }

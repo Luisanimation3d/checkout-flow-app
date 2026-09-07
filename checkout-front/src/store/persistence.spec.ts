@@ -43,7 +43,7 @@ const transaction: Transaction = {
   amountInCents: 16300000,
   currency: 'COP',
   status: 'PENDING',
-  wompiTransactionId: 'wompi-1',
+  gatewayTransactionId: 'gateway-txn-1',
   statusMessage: null,
 }
 

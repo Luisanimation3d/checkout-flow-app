@@ -6,10 +6,10 @@ import { ProductsModule } from '../products/products.module';
 import { CreateTransactionUseCase } from './application/create-transaction.use-case';
 import { GetTransactionByIdUseCase } from './application/get-transaction-by-id.use-case';
 import { TRANSACTION_REPOSITORY } from './domain/transaction-repository.port';
-import { WOMPI_GATEWAY } from './domain/wompi-gateway.port';
+import { PAYMENT_GATEWAY } from './domain/payment-gateway.port';
 import { TransactionOrmEntity } from './infrastructure/transaction.orm-entity';
 import { TransactionTypeOrmRepository } from './infrastructure/transaction-typeorm.repository';
-import { WompiGatewayAdapter } from './infrastructure/wompi-gateway.adapter';
+import { PaymentGatewayAdapter } from './infrastructure/payment-gateway.adapter';
 import { TokenizationController } from './tokenization.controller';
 import { TransactionsController } from './transactions.controller';
 
@@ -25,7 +25,7 @@ import { TransactionsController } from './transactions.controller';
     CreateTransactionUseCase,
     GetTransactionByIdUseCase,
     { provide: TRANSACTION_REPOSITORY, useClass: TransactionTypeOrmRepository },
-    { provide: WOMPI_GATEWAY, useClass: WompiGatewayAdapter },
+    { provide: PAYMENT_GATEWAY, useClass: PaymentGatewayAdapter },
   ],
 })
 export class TransactionsModule {}

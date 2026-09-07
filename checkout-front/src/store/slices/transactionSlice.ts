@@ -4,7 +4,7 @@ import type { DeliveryFormValues } from '@/types/delivery'
 import type { Transaction } from '@/types/transaction'
 import { API_URL } from '@/utils/apiUrl'
 import { logger } from '@/utils/logger'
-import { tokenizeCard } from '@/utils/wompi'
+import { tokenizeCard } from '@/utils/cardTokenization'
 
 export type TransactionPhase = 'idle' | 'submitting' | 'polling' | 'resolved' | 'error'
 

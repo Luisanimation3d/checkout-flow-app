@@ -16,7 +16,7 @@ const mockTransaction: Transaction = {
   amountInCents: 11400000,
   currency: 'COP',
   status: 'PENDING',
-  wompiTransactionId: null,
+  gatewayTransactionId: null,
   statusMessage: null,
 };
 

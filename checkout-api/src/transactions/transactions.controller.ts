@@ -31,7 +31,7 @@ export class TransactionsController {
   ) {}
 
   @ApiOperation({
-    summary: 'Crea cliente, entrega y transacción, y la envía a Wompi con el cardToken ya tokenizado',
+    summary: 'Crea cliente, entrega y transacción, y la envía al proveedor de pagos con el cardToken ya tokenizado',
   })
   @ApiCreatedResponse({ type: TransactionResponseDto })
   @ApiBadRequestResponse({ description: 'Datos inválidos o producto sin stock' })

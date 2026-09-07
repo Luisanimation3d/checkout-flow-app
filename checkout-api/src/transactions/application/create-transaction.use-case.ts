@@ -20,10 +20,10 @@ import {
   type TransactionRepositoryPort,
 } from '../domain/transaction-repository.port';
 import {
-  WOMPI_GATEWAY,
-  type WompiChargeResult,
-  type WompiGatewayPort,
-} from '../domain/wompi-gateway.port';
+  PAYMENT_GATEWAY,
+  type GatewayChargeResult,
+  type PaymentGatewayPort,
+} from '../domain/payment-gateway.port';
 
 export interface CreateTransactionInput {
   productId: string;
@@ -44,8 +44,8 @@ export class CreateTransactionUseCase {
     private readonly createDelivery: CreateDeliveryUseCase,
     @Inject(TRANSACTION_REPOSITORY)
     private readonly transactionRepository: TransactionRepositoryPort,
-    @Inject(WOMPI_GATEWAY)
-    private readonly wompiGateway: WompiGatewayPort,
+    @Inject(PAYMENT_GATEWAY)
+    private readonly paymentGateway: PaymentGatewayPort,
   ) {}
 
   async execute(input: CreateTransactionInput): Promise<Result<Transaction>> {
@@ -101,15 +101,15 @@ export class CreateTransactionUseCase {
       amountInCents,
       currency: product.currency,
       status: 'PENDING',
-      wompiTransactionId: null,
+      gatewayTransactionId: null,
       statusMessage: null,
     });
     this.logger.log(`Transacción "${transaction.id}" creada en estado PENDING`);
 
-    this.logger.log(`Enviando cobro a Wompi — referencia=${reference}`);
-    let charge: WompiChargeResult;
+    this.logger.log(`Enviando cobro al proveedor de pagos — referencia=${reference}`);
+    let charge: GatewayChargeResult;
     try {
-      charge = await this.wompiGateway.createCardTransaction({
+      charge = await this.paymentGateway.createCardTransaction({
         reference,
         amountInCents,
         currency: product.currency,
@@ -118,28 +118,28 @@ export class CreateTransactionUseCase {
         customerEmail: input.customer.email,
       });
     } catch (err) {
-      // Si Wompi falla acá (p. ej. no pudimos obtener los acceptance tokens),
+      // Si el proveedor de pagos falla acá (p. ej. no pudimos obtener los acceptance tokens),
       // la transacción ya quedó creada en PENDING: hay que cerrarla como ERROR
       // en vez de dejarla huérfana, y no dejar que el Error escape sin control
       // (Nest lo convertiría en un 500 genérico, perdiendo el motivo real).
       const message =
-        err instanceof Error ? err.message : 'No pudimos comunicarnos con Wompi.';
-      this.logger.error(`Fallo de comunicación con Wompi: ${message}`);
+        err instanceof Error ? err.message : 'No pudimos comunicarnos con el proveedor de pagos.';
+      this.logger.error(`Fallo de comunicación con el proveedor de pagos: ${message}`);
       await this.transactionRepository.transitionFromPending(transaction.id, {
         status: 'ERROR',
-        wompiTransactionId: null,
+        gatewayTransactionId: null,
         statusMessage: message,
       });
       return Result.fail(new Error(message));
     }
     this.logger.log(
-      `Wompi respondió — status=${charge.status} wompiId="${charge.wompiTransactionId}"`,
+      `El proveedor de pagos respondió — status=${charge.status} gatewayId="${charge.gatewayTransactionId}"`,
     );
 
     const { transaction: updatedTransaction, didTransition } =
       await this.transactionRepository.transitionFromPending(transaction.id, {
         status: charge.status,
-        wompiTransactionId: charge.wompiTransactionId,
+        gatewayTransactionId: charge.gatewayTransactionId,
         statusMessage: charge.statusMessage,
       });
     transaction = updatedTransaction;

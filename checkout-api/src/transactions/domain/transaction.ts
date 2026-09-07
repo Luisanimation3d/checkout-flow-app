@@ -9,6 +9,6 @@ export interface Transaction {
   amountInCents: number;
   currency: string;
   status: TransactionStatus;
-  wompiTransactionId: string | null;
+  gatewayTransactionId: string | null;
   statusMessage: string | null;
 }

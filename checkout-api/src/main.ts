@@ -19,15 +19,15 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Checkout API')
     .setDescription(
-      'API del flujo de checkout (Wompi FullStack Test): productos, clientes, entregas y transacciones. ' +
-        'La tokenización de tarjeta ocurre en el navegador (JWE); este backend solo reenvía el payload ya cifrado a Wompi.',
+      'API del flujo de checkout: productos, clientes, entregas y transacciones. ' +
+        'La tokenización de tarjeta ocurre en el navegador (JWE); este backend solo reenvía el payload ya cifrado al proveedor de pagos.',
     )
     .setVersion('1.0')
     .addTag('products', 'Catálogo de productos')
     .addTag('customers', 'Datos del comprador asociados a una transacción')
     .addTag('deliveries', 'Datos de entrega asociados a una transacción')
     .addTag('transactions', 'Creación y consulta de transacciones de pago')
-    .addTag('tokenization', 'Proxy hacia Wompi para tokenizar tarjetas ya cifradas por el cliente')
+    .addTag('tokenization', 'Proxy hacia el proveedor de pagos para tokenizar tarjetas ya cifradas por el cliente')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api-docs', app, swaggerDocument);

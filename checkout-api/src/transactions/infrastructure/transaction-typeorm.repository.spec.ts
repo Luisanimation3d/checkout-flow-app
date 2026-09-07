@@ -11,7 +11,7 @@ const row: TransactionOrmEntity = {
   amountInCents: 11400000,
   currency: 'COP',
   status: 'PENDING',
-  wompiTransactionId: null,
+  gatewayTransactionId: null,
   statusMessage: null,
 };
 
@@ -44,7 +44,7 @@ describe('TransactionTypeOrmRepository', () => {
       amountInCents: row.amountInCents,
       currency: row.currency,
       status: 'PENDING',
-      wompiTransactionId: row.wompiTransactionId,
+      gatewayTransactionId: row.gatewayTransactionId,
       statusMessage: row.statusMessage,
     });
 
@@ -73,13 +73,13 @@ describe('TransactionTypeOrmRepository', () => {
 
       const result = await repository.transitionFromPending(row.id, {
         status: 'APPROVED',
-        wompiTransactionId: 'wompi-1',
+        gatewayTransactionId: 'gateway-txn-1',
         statusMessage: null,
       });
 
       expect(repo.update).toHaveBeenCalledWith(
         { id: row.id, status: 'PENDING' },
-        { status: 'APPROVED', wompiTransactionId: 'wompi-1', statusMessage: null },
+        { status: 'APPROVED', gatewayTransactionId: 'gateway-txn-1', statusMessage: null },
       );
       expect(result.didTransition).toBe(true);
       expect(result.transaction.status).toBe('APPROVED');
@@ -91,7 +91,7 @@ describe('TransactionTypeOrmRepository', () => {
 
       const result = await repository.transitionFromPending(row.id, {
         status: 'APPROVED',
-        wompiTransactionId: 'wompi-1',
+        gatewayTransactionId: 'gateway-txn-1',
         statusMessage: null,
       });
 
@@ -106,7 +106,7 @@ describe('TransactionTypeOrmRepository', () => {
 
       const result = await repository.transitionFromPending(row.id, {
         status: 'ERROR',
-        wompiTransactionId: null,
+        gatewayTransactionId: null,
         statusMessage: 'timeout',
       });
 

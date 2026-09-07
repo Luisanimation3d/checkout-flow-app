@@ -10,7 +10,7 @@ module.exports = {
   },
   // jose se publica como ESM puro; sin esto Jest lo deja tal cual y require()
   // truena en los archivos (PDP/PaymentStatus) que lo importan transitivamente
-  // vía transactionSlice -> wompi sin mockearlo directamente.
+  // vía transactionSlice -> cardTokenization sin mockearlo directamente.
   transformIgnorePatterns: ['node_modules/(?!(jose)/)'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
