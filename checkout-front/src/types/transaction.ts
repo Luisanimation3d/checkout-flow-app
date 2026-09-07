@@ -1,3 +1,16 @@
-export type TransactionOutcome = 'approved' | 'pending' | 'failed'
+export type TransactionApiStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'ERROR'
 
-export type TransactionStatus = 'processing' | TransactionOutcome
+export interface Transaction {
+  id: string
+  reference: string
+  productId: string
+  customerId: string
+  deliveryId: string
+  amountInCents: number
+  currency: string
+  status: TransactionApiStatus
+  wompiTransactionId: string | null
+  statusMessage: string | null
+}
+
+export type TransactionStatus = 'processing' | 'approved' | 'failed'

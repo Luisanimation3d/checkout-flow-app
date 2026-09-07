@@ -7,4 +7,5 @@ export interface CardFormValues {
   name: string
   expiry: string
   cvv: string
+  installments: number
 }

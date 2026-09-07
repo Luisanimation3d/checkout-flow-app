@@ -35,4 +35,8 @@ export class ProductTypeOrmRepository implements ProductRepositoryPort {
     const row = await this.repository.findOne({ where: { id } });
     return row ? toDomain(row) : null;
   }
+
+  async decreaseStock(id: string): Promise<void> {
+    await this.repository.decrement({ id }, 'stock', 1);
+  }
 }

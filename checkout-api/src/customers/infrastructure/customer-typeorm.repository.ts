@@ -12,6 +12,7 @@ const toDomain = (row: CustomerOrmEntity): Customer => ({
   documentType: row.documentType as DocumentType,
   documentId: row.documentId,
   phone: row.phone,
+  email: row.email,
 });
 
 @Injectable()

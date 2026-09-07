@@ -4,8 +4,6 @@ import type { DeliveryFormValues } from '@/types/delivery'
 export interface PaymentStatusRouteState {
   productId: string
   transactionId: string
-  total: number
-  currency: string
   card: CardFormValues
   delivery: DeliveryFormValues
 }

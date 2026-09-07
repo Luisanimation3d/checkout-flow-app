@@ -16,4 +16,7 @@ export class CustomerOrmEntity {
 
   @Column({ length: 10 })
   phone: string;
+
+  @Column()
+  email: string;
 }

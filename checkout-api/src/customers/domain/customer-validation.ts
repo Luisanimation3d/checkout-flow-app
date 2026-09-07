@@ -4,12 +4,14 @@ const DOCUMENT_TYPES: readonly DocumentType[] = ['CC', 'CE', 'TI', 'PA'];
 const DOCUMENT_ID_PATTERN = /^\d{6,10}$/;
 const PHONE_PATTERN = /^\d{10}$/;
 const FULL_NAME_PATTERN = /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s]{3,}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface CustomerInput {
   fullName: string;
   documentType: string;
   documentId: string;
   phone: string;
+  email: string;
 }
 
 // Nunca confiar en la validación del frontend: se revalida todo del lado del servidor.
@@ -28,6 +30,10 @@ export const validateCustomerInput = (input: CustomerInput): string | null => {
 
   if (!PHONE_PATTERN.test(input.phone)) {
     return 'phone must contain exactly 10 digits';
+  }
+
+  if (!EMAIL_PATTERN.test(input.email)) {
+    return 'email must be a valid email address';
   }
 
   return null;

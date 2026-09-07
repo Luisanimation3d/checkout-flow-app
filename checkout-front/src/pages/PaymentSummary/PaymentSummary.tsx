@@ -35,6 +35,8 @@ interface PaymentSummaryProps {
   product: Product
   card: CardFormValues
   delivery: DeliveryFormValues
+  isSubmitting?: boolean
+  submitError?: string | null
 }
 
 export const PaymentSummary = ({
@@ -46,6 +48,8 @@ export const PaymentSummary = ({
   product,
   card,
   delivery,
+  isSubmitting = false,
+  submitError = null,
 }: PaymentSummaryProps) => {
   const deliveryFee = calculateDeliveryFee(product.deliveryFee, delivery.city)
   const total = getOrderTotal(product.price, BASE_FEE, deliveryFee)
@@ -111,11 +115,13 @@ export const PaymentSummary = ({
               <span>{formatCurrency(total, product.currency)}</span>
             </div>
           </div>
+
+          {submitError && <p className={styles.paymentSummary__error}>{submitError}</p>}
         </>
       }
       footer={
-        <PurchaseButton onClick={onConfirmPayment}>
-          Pagar {formatCurrency(total, product.currency)}
+        <PurchaseButton onClick={onConfirmPayment} disabled={isSubmitting}>
+          {isSubmitting ? 'Procesando…' : `Pagar ${formatCurrency(total, product.currency)}`}
         </PurchaseButton>
       }
     />

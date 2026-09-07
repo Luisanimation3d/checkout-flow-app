@@ -8,6 +8,7 @@ import { DOCUMENT_TYPES } from '@/utils/documentTypes'
 import { getFieldStatus } from '@/utils/getFieldStatus'
 import { getStatusIcon } from '@/utils/getStatusIcon'
 import { isDocumentIdValid } from '@/utils/isDocumentIdValid'
+import { isEmailValid } from '@/utils/isEmailValid'
 import { isFullNameValid } from '@/utils/isFullNameValid'
 import { isNonEmptyText } from '@/utils/isNonEmptyText'
 import { isPhoneValid } from '@/utils/isPhoneValid'
@@ -39,6 +40,8 @@ export const DeliveryForm = ({ values, onChange }: DeliveryFormProps) => {
   const documentIdStatus = getFieldStatus(values.documentId.length > 0, isDocumentIdValid(values.documentId))
 
   const phoneStatus = getFieldStatus(values.phone.length === PHONE_LENGTH, isPhoneValid(values.phone))
+
+  const emailStatus = getFieldStatus(values.email.trim().length > 0, isEmailValid(values.email))
 
   const addressStatus = getFieldStatus(
     values.address.trim().length > 0,
@@ -93,6 +96,19 @@ export const DeliveryForm = ({ values, onChange }: DeliveryFormProps) => {
         helperText="Ingresa un número de 10 dígitos"
         trailingIcon={getStatusIcon(phoneStatus)}
         onChange={(event) => setField('phone', event.target.value.replace(/\D/g, '').slice(0, PHONE_LENGTH))}
+      />
+
+      <FloatingInput
+        id="email"
+        label="Correo electrónico"
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        value={values.email}
+        status={emailStatus}
+        helperText="Ingresa un correo válido"
+        trailingIcon={getStatusIcon(emailStatus)}
+        onChange={(event) => setField('email', event.target.value)}
       />
 
       <FloatingInput

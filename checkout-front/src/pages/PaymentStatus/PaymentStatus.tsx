@@ -1,21 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { RiCheckboxCircleFill, RiCloseCircleFill, RiLoader4Line, RiStore2Line, RiTimeFill } from 'react-icons/ri'
+import { RiCheckboxCircleFill, RiCloseCircleFill, RiLoader4Line, RiStore2Line } from 'react-icons/ri'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { PurchaseButton } from '@/components/PurchaseButton'
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { pollTransaction } from '@/store/slices/transactionSlice'
 import type { PaymentStatusRouteState, RetryCheckoutRouteState } from '@/types/checkoutRouteState'
 import type { TransactionStatus } from '@/types/transaction'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { simulateTransactionOutcome } from '@/utils/simulateTransactionOutcome'
+import { logger } from '@/utils/logger'
 import styles from './PaymentStatus.module.scss'
 
-const PROCESSING_DELAY_MS = 1600
+const POLL_INTERVAL_MS = 1800
 
 interface StatusConfig {
   icon: ReactNode
   title: string
   subtitle: string
-  tone: 'processing' | 'success' | 'warning' | 'danger'
+  tone: 'processing' | 'success' | 'danger'
 }
 
 const STATUS_CONFIG: Record<TransactionStatus, StatusConfig> = {
@@ -31,12 +33,6 @@ const STATUS_CONFIG: Record<TransactionStatus, StatusConfig> = {
     subtitle: 'Tu pedido fue confirmado y va en camino',
     tone: 'success',
   },
-  pending: {
-    icon: <RiTimeFill />,
-    title: 'Pago en proceso',
-    subtitle: 'Te notificaremos apenas se confirme tu pago',
-    tone: 'warning',
-  },
   failed: {
     icon: <RiCloseCircleFill />,
     title: 'No pudimos procesar tu pago',
@@ -48,9 +44,39 @@ const STATUS_CONFIG: Record<TransactionStatus, StatusConfig> = {
 export const PaymentStatus = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const routeState = location.state as PaymentStatusRouteState | null
+  const dispatch = useAppDispatch()
 
-  const [status, setStatus] = useState<TransactionStatus>('processing')
+  const transaction = useAppSelector((state) => state.transaction.current)
+  const checkoutCard = useAppSelector((state) => state.checkout.card)
+  const checkoutDelivery = useAppSelector((state) => state.checkout.delivery)
+
+  // Resiliencia al refresh: si location.state se perdió (pestaña nueva, o el
+  // navegador no conservó el history state), reconstruimos lo mismo desde el
+  // estado persistido en Redux/localStorage — la transacción y el checkout
+  // que ya se completó siguen ahí.
+  const routeState = useMemo<PaymentStatusRouteState | null>(() => {
+    const fromRouter = location.state as PaymentStatusRouteState | null
+    if (fromRouter) return fromRouter
+
+    if (transaction && checkoutCard && checkoutDelivery) {
+      return {
+        productId: transaction.productId,
+        transactionId: transaction.id,
+        card: checkoutCard,
+        delivery: checkoutDelivery,
+      }
+    }
+
+    return null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
+
+  const status: TransactionStatus =
+    transaction?.status === 'APPROVED'
+      ? 'approved'
+      : transaction?.status === 'DECLINED' || transaction?.status === 'ERROR'
+        ? 'failed'
+        : 'processing'
 
   useEffect(() => {
     if (!routeState) {
@@ -58,14 +84,27 @@ export const PaymentStatus = () => {
       return
     }
 
-    setStatus('processing')
-    const timeoutId = setTimeout(() => setStatus(simulateTransactionOutcome()), PROCESSING_DELAY_MS)
-    return () => clearTimeout(timeoutId)
-  }, [routeState, navigate])
+    logger.info('payment-status', `Iniciando polling de la transacción ${routeState.transactionId}`)
+
+    const poll = async () => {
+      const result = await dispatch(pollTransaction(routeState.transactionId))
+      if (!pollTransaction.fulfilled.match(result)) return
+
+      if (result.payload.status !== 'PENDING') {
+        logger.info('payment-status', `Polling detenido — pago ${result.payload.status}`)
+        clearInterval(intervalId)
+      }
+    }
+
+    const intervalId = setInterval(poll, POLL_INTERVAL_MS)
+    poll()
+
+    return () => clearInterval(intervalId)
+  }, [routeState, navigate, dispatch])
 
   if (!routeState) return null
 
-  const { productId, transactionId, total, currency, card, delivery } = routeState
+  const { productId, card, delivery } = routeState
   const { icon, title, subtitle, tone } = STATUS_CONFIG[status]
   const isProcessing = status === 'processing'
 
@@ -86,10 +125,12 @@ export const PaymentStatus = () => {
         <h1 className={styles.paymentStatus__title}>{title}</h1>
         <p className={styles.paymentStatus__subtitle}>{subtitle}</p>
 
-        {!isProcessing && (
+        {!isProcessing && transaction && (
           <div className={styles.paymentStatus__details}>
-            <p className={styles.paymentStatus__amount}>{formatCurrency(total, currency)}</p>
-            <p className={styles.paymentStatus__transactionId}>Referencia {transactionId}</p>
+            <p className={styles.paymentStatus__amount}>
+              {formatCurrency(transaction.amountInCents / 100, transaction.currency)}
+            </p>
+            <p className={styles.paymentStatus__transactionId}>Referencia {transaction.reference}</p>
           </div>
         )}
       </div>
@@ -103,19 +144,6 @@ export const PaymentStatus = () => {
           </button>
         </div>
       )}
-
-      <div className={styles.paymentStatus__preview}>
-        <span>Vista previa:</span>
-        <button type="button" onClick={() => setStatus('approved')}>
-          Aprobado
-        </button>
-        <button type="button" onClick={() => setStatus('pending')}>
-          Pendiente
-        </button>
-        <button type="button" onClick={() => setStatus('failed')}>
-          Fallida
-        </button>
-      </div>
     </div>
   )
 }
