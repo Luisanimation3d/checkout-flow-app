@@ -39,8 +39,6 @@ const config: Config = {
     '!src/**/*.module.ts',
     '!src/**/*.orm-entity.ts',
     '!src/main.ts',
-    '!src/app.controller.ts',
-    '!src/app.service.ts',
     '!src/**/*.seeder.ts',
     '!src/**/*-seed-data.ts',
   ],
