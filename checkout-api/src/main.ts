@@ -1,12 +1,22 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from './shared/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' });
+  app.use(
+    helmet({
+      // Swagger UI (/api-docs) carga estilos/scripts inline; con la CSP por
+      // defecto de Helmet los bloquea y la página queda en blanco. El resto
+      // de headers (HSTS, X-Content-Type-Options, X-Frame-Options, etc.) —
+      // los que realmente importan para una API JSON — siguen activos.
+      contentSecurityPolicy: false,
+    }),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
