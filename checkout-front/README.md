@@ -1,75 +1,58 @@
-# React + TypeScript + Vite
+# checkout-front
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend del flujo de checkout: página de producto → datos de tarjeta/entrega → resumen → estado final. Construido con **React 19 + TypeScript + Vite**, **Redux Toolkit** para el estado global, y persistencia en `localStorage` para sobrevivir a un refresh de página.
 
-Currently, two official plugins are available:
+Para la visión general del proyecto (flujo completo, modelo de datos, resultados de cobertura, links de despliegue) ver el [README raíz](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- React 19 + React Router 7 (SPA)
+- Redux Toolkit (`@reduxjs/toolkit`) — estado obligatorio del enunciado
+- SCSS Modules
+- `jose` para cifrado JWE de tarjeta en el navegador
+- Jest + Testing Library
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Variables de entorno
 
-## Expanding the ESLint configuration
+Copiar `.env.example` a `.env`:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Variable | Descripción |
+|---|---|
+| `VITE_API_URL` | URL base del backend (ej. `http://localhost:3000` en desarrollo) |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Instalación y ejecución
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev       # servidor de desarrollo (Vite)
+npm run build      # build de producción a dist/
+npm run preview    # sirve el build de producción localmente
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Tests
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Suite con **Jest** (`babel-jest` + `jest-environment-jsdom`) — no Vitest, siguiendo el requisito explícito del enunciado de crear las pruebas con Jest tanto en frontend como en backend.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run test        # unit tests
+npm run test:cov     # con reporte de cobertura
 ```
+
+**Resultado más reciente: 51 test suites / 222 tests, todos en verde.**
+
+| Métrica | Cobertura |
+|---|---|
+| Statements | 94.71% |
+| Branches | 88.11% |
+| Functions | 91.17% |
+| Lines | 95.24% |
+
+(Umbral mínimo exigido en `jest.config.cjs`: 80% en las 4 métricas.)
+
+## Estado global y persistencia
+
+Todo el estado de checkout y de la transacción en curso vive en Redux (`src/store`). `store.ts` hidrata el estado inicial desde `localStorage` al arrancar y se suscribe a cada cambio para persistirlo (`src/store/persistence.ts`) — así, si el usuario refresca la página a mitad del flujo de pago, recupera exactamente dónde estaba. Los datos sensibles de tarjeta (`cardNumber`, `cvv`) se redactan explícitamente antes de escribir a `localStorage`; nunca se persisten en texto plano.
+
+## Tokenización de tarjeta
+
+El número de tarjeta, CVV y fecha de expiración **nunca salen del navegador en texto plano**: se cifran con JWE (RSA-OAEP-256 + A256GCM, vía `jose`) usando la llave pública que expone el backend (`GET /tokenization/public-key`), y solo el payload ya cifrado viaja a `POST /tokenization/card`. Ver `src/utils/cardTokenization.ts`.
