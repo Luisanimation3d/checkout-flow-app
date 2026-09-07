@@ -8,6 +8,8 @@ import {
   resetCheckout,
   setCheckoutProduct,
   setPaymentFormStep,
+  updateCardDraft,
+  updateDeliveryDraft,
 } from './checkoutSlice'
 
 const initialState = {
@@ -83,5 +85,21 @@ describe('checkoutSlice', () => {
     const state = checkoutReducer(initialState, setCheckoutProduct('p1'))
 
     expect(state.productId).toBe('p1')
+  })
+
+  it('updateCardDraft reflects in-progress typing without changing the step', () => {
+    const partialCard = { ...card, name: '' }
+    const state = checkoutReducer(initialState, updateCardDraft(partialCard))
+
+    expect(state.card).toEqual(partialCard)
+    expect(state.step).toBe('closed')
+  })
+
+  it('updateDeliveryDraft reflects in-progress typing without changing the step', () => {
+    const partialDelivery = { ...delivery, address: '' }
+    const state = checkoutReducer(initialState, updateDeliveryDraft(partialDelivery))
+
+    expect(state.delivery).toEqual(partialDelivery)
+    expect(state.step).toBe('closed')
   })
 })

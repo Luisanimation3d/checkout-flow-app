@@ -48,6 +48,16 @@ const checkoutSlice = createSlice({
       state.delivery = action.payload.delivery
       state.step = 'summary'
     },
+    // A diferencia de completePaymentForm (que cierra el paso y avanza a summary),
+    // estas dos reflejan cada tecleo del usuario en el formulario mientras lo llena,
+    // para que un refresh a mitad del formulario también recupere el progreso
+    // (store.subscribe persiste esto en localStorage en cada cambio — ver store.ts).
+    updateCardDraft(state, action: PayloadAction<CardFormValues>) {
+      state.card = action.payload
+    },
+    updateDeliveryDraft(state, action: PayloadAction<DeliveryFormValues>) {
+      state.delivery = action.payload
+    },
     resetCheckout() {
       return initialState
     },
@@ -60,6 +70,8 @@ export const {
   closeCheckout,
   setPaymentFormStep,
   completePaymentForm,
+  updateCardDraft,
+  updateDeliveryDraft,
   resetCheckout,
 } = checkoutSlice.actions
 export const checkoutReducer = checkoutSlice.reducer

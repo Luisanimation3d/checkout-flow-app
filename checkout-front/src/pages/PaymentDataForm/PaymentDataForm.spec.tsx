@@ -79,4 +79,27 @@ describe('PaymentDataForm', () => {
 
     expect(screen.getByLabelText('Nombre completo')).toBeInTheDocument()
   })
+
+  it('reports every field change via onCardChange/onDeliveryChange as the user types (for live persistence)', async () => {
+    const onCardChange = jest.fn()
+    const onDeliveryChange = jest.fn()
+    render(
+      <PaymentDataForm
+        isOpen
+        onClose={() => {}}
+        onComplete={() => {}}
+        onCardChange={onCardChange}
+        onDeliveryChange={onDeliveryChange}
+      />,
+    )
+
+    await userEvent.type(screen.getByLabelText('Nombre del titular'), 'L')
+    expect(onCardChange).toHaveBeenCalledWith(expect.objectContaining({ name: 'L' }))
+
+    await fillValidCard()
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
+
+    await userEvent.type(screen.getByLabelText('Nombre completo'), 'L')
+    expect(onDeliveryChange).toHaveBeenCalledWith(expect.objectContaining({ fullName: 'L' }))
+  }, 15000)
 })

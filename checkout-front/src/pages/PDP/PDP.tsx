@@ -11,6 +11,8 @@ import {
   openCheckout,
   resetCheckout,
   setCheckoutProduct,
+  updateCardDraft,
+  updateDeliveryDraft,
 } from '@/store/slices/checkoutSlice'
 import type { PaymentDataFormStep } from '@/store/slices/checkoutSlice'
 import { fetchProductById } from '@/store/slices/productsSlice'
@@ -134,6 +136,8 @@ export const PDP = () => {
         onComplete={(nextCard, nextDelivery) =>
           dispatch(completePaymentForm({ card: nextCard, delivery: nextDelivery }))
         }
+        onCardChange={(values) => dispatch(updateCardDraft(values))}
+        onDeliveryChange={(values) => dispatch(updateDeliveryDraft(values))}
       />
 
       {card && delivery && (
