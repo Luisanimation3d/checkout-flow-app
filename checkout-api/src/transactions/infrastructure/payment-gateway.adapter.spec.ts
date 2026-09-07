@@ -1,11 +1,11 @@
 import type { ConfigService } from '@nestjs/config';
-import { WompiGatewayAdapter } from './wompi-gateway.adapter';
+import { PaymentGatewayAdapter } from './payment-gateway.adapter';
 
 const CONFIG_VALUES: Record<string, string> = {
-  WOMPI_BASE_URL: 'https://api-sandbox.example/v1',
-  WOMPI_PUBLIC_KEY: 'pub_test',
-  WOMPI_PRIVATE_KEY: 'prv_test',
-  WOMPI_INTEGRITY_SECRET: 'secret_test',
+  PAYMENT_GATEWAY_BASE_URL: 'https://api-sandbox.example/v1',
+  PAYMENT_GATEWAY_PUBLIC_KEY: 'pub_test',
+  PAYMENT_GATEWAY_PRIVATE_KEY: 'prv_test',
+  PAYMENT_GATEWAY_INTEGRITY_SECRET: 'secret_test',
 };
 
 const jsonResponse = (body: unknown, ok = true, status = ok ? 200 : 422) => ({
@@ -14,14 +14,14 @@ const jsonResponse = (body: unknown, ok = true, status = ok ? 200 : 422) => ({
   json: () => Promise.resolve(body),
 });
 
-describe('WompiGatewayAdapter', () => {
+describe('PaymentGatewayAdapter', () => {
   let config: { getOrThrow: jest.Mock };
-  let adapter: WompiGatewayAdapter;
+  let adapter: PaymentGatewayAdapter;
   let fetchMock: jest.Mock;
 
   beforeEach(() => {
     config = { getOrThrow: jest.fn((key: string) => CONFIG_VALUES[key]) };
-    adapter = new WompiGatewayAdapter(config as unknown as ConfigService);
+    adapter = new PaymentGatewayAdapter(config as unknown as ConfigService);
     fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
   });
@@ -51,13 +51,13 @@ describe('WompiGatewayAdapter', () => {
           }),
         )
         .mockResolvedValueOnce(
-          jsonResponse({ data: { id: 'wompi-1', status: 'APPROVED', status_message: null } }),
+          jsonResponse({ data: { id: 'gateway-txn-1', status: 'APPROVED', status_message: null } }),
         );
 
       const result = await adapter.createCardTransaction(chargeInput);
 
       expect(result).toEqual({
-        wompiTransactionId: 'wompi-1',
+        gatewayTransactionId: 'gateway-txn-1',
         status: 'APPROVED',
         statusMessage: null,
       });
@@ -75,7 +75,7 @@ describe('WompiGatewayAdapter', () => {
       expect(sentBody.signature).toHaveLength(64); // sha256 hex digest
     });
 
-    it('maps an unknown/unexpected Wompi status to ERROR', async () => {
+    it('maps an unknown/unexpected gateway status to ERROR', async () => {
       fetchMock
         .mockResolvedValueOnce(
           jsonResponse({
@@ -86,7 +86,7 @@ describe('WompiGatewayAdapter', () => {
           }),
         )
         .mockResolvedValueOnce(
-          jsonResponse({ data: { id: 'wompi-1', status: 'SOME_NEW_STATUS', status_message: null } }),
+          jsonResponse({ data: { id: 'gateway-txn-1', status: 'SOME_NEW_STATUS', status_message: null } }),
         );
 
       const result = await adapter.createCardTransaction(chargeInput);
@@ -94,7 +94,7 @@ describe('WompiGatewayAdapter', () => {
       expect(result.status).toBe('ERROR');
     });
 
-    it('returns a graceful ERROR result (not a throw) when Wompi rejects the charge', async () => {
+    it('returns a graceful ERROR result (not a throw) when the gateway rejects the charge', async () => {
       fetchMock
         .mockResolvedValueOnce(
           jsonResponse({
@@ -111,7 +111,7 @@ describe('WompiGatewayAdapter', () => {
       const result = await adapter.createCardTransaction(chargeInput);
 
       expect(result.status).toBe('ERROR');
-      expect(result.wompiTransactionId).toBe('');
+      expect(result.gatewayTransactionId).toBe('');
       expect(result.statusMessage).toBe('invalid card');
     });
 
@@ -119,7 +119,7 @@ describe('WompiGatewayAdapter', () => {
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 500));
 
       await expect(adapter.createCardTransaction(chargeInput)).rejects.toThrow(
-        'Unable to fetch Wompi merchant info: 500',
+        'Unable to fetch gateway merchant info: 500',
       );
     });
   });
@@ -127,13 +127,13 @@ describe('WompiGatewayAdapter', () => {
   describe('getTransactionStatus', () => {
     it('returns the mapped status on success', async () => {
       fetchMock.mockResolvedValueOnce(
-        jsonResponse({ data: { id: 'wompi-1', status: 'DECLINED', status_message: 'no funds' } }),
+        jsonResponse({ data: { id: 'gateway-txn-1', status: 'DECLINED', status_message: 'no funds' } }),
       );
 
-      const result = await adapter.getTransactionStatus('wompi-1');
+      const result = await adapter.getTransactionStatus('gateway-txn-1');
 
       expect(result).toEqual({
-        wompiTransactionId: 'wompi-1',
+        gatewayTransactionId: 'gateway-txn-1',
         status: 'DECLINED',
         statusMessage: 'no funds',
       });
@@ -142,10 +142,10 @@ describe('WompiGatewayAdapter', () => {
     it('returns a graceful ERROR result (not a throw) when the request fails', async () => {
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 500));
 
-      const result = await adapter.getTransactionStatus('wompi-1');
+      const result = await adapter.getTransactionStatus('gateway-txn-1');
 
       expect(result.status).toBe('ERROR');
-      expect(result.wompiTransactionId).toBe('wompi-1');
+      expect(result.gatewayTransactionId).toBe('gateway-txn-1');
     });
   });
 
@@ -162,7 +162,7 @@ describe('WompiGatewayAdapter', () => {
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 500));
 
       await expect(adapter.getTokenizationPublicKey()).rejects.toThrow(
-        'Unable to fetch Wompi tokenization public key',
+        'Unable to fetch gateway tokenization public key',
       );
     });
   });
@@ -178,7 +178,7 @@ describe('WompiGatewayAdapter', () => {
       expect(JSON.parse(callInit.body as string)).toEqual({ payload: 'encrypted-payload' });
     });
 
-    it('throws with the specific Wompi validation message when rejected', async () => {
+    it('throws with the specific gateway validation message when rejected', async () => {
       fetchMock.mockResolvedValueOnce(
         jsonResponse(
           { error: { messages: { number: ['El número de tarjeta no es aceptado'] } } },
@@ -192,7 +192,7 @@ describe('WompiGatewayAdapter', () => {
       );
     });
 
-    it('falls back to a generic message when Wompi gives no specific reason', async () => {
+    it('falls back to a generic message when the gateway gives no specific reason', async () => {
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 422));
 
       await expect(adapter.tokenizeCard('bad-payload')).rejects.toThrow(

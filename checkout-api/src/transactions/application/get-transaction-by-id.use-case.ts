@@ -11,9 +11,9 @@ import {
   type TransactionRepositoryPort,
 } from '../domain/transaction-repository.port';
 import {
-  WOMPI_GATEWAY,
-  type WompiGatewayPort,
-} from '../domain/wompi-gateway.port';
+  PAYMENT_GATEWAY,
+  type PaymentGatewayPort,
+} from '../domain/payment-gateway.port';
 
 @Injectable()
 export class GetTransactionByIdUseCase {
@@ -22,8 +22,8 @@ export class GetTransactionByIdUseCase {
   constructor(
     @Inject(TRANSACTION_REPOSITORY)
     private readonly transactionRepository: TransactionRepositoryPort,
-    @Inject(WOMPI_GATEWAY)
-    private readonly wompiGateway: WompiGatewayPort,
+    @Inject(PAYMENT_GATEWAY)
+    private readonly paymentGateway: PaymentGatewayPort,
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepositoryPort,
   ) {}
@@ -39,14 +39,14 @@ export class GetTransactionByIdUseCase {
       return Result.fail(new TransactionNotFoundError(id));
     }
 
-    // Wompi resuelve el pago de forma asíncrona: mientras siga PENDING localmente,
+    // El proveedor de pagos resuelve el pago de forma asíncrona: mientras siga PENDING localmente,
     // re-consultamos su estado real en cada GET (polling bajo demanda).
-    if (transaction.status === 'PENDING' && transaction.wompiTransactionId) {
+    if (transaction.status === 'PENDING' && transaction.gatewayTransactionId) {
       this.logger.debug(
-        `Transacción "${id}" sigue PENDING — consultando estado real en Wompi (${transaction.wompiTransactionId})`,
+        `Transacción "${id}" sigue PENDING — consultando estado real en el proveedor de pagos (${transaction.gatewayTransactionId})`,
       );
-      const charge = await this.wompiGateway.getTransactionStatus(
-        transaction.wompiTransactionId,
+      const charge = await this.paymentGateway.getTransactionStatus(
+        transaction.gatewayTransactionId,
       );
 
       if (charge.status !== transaction.status) {
@@ -55,7 +55,7 @@ export class GetTransactionByIdUseCase {
             transaction.id,
             {
               status: charge.status,
-              wompiTransactionId: transaction.wompiTransactionId,
+              gatewayTransactionId: transaction.gatewayTransactionId,
               statusMessage: charge.statusMessage,
             },
           );
@@ -76,7 +76,7 @@ export class GetTransactionByIdUseCase {
           );
         }
       } else {
-        this.logger.debug(`Transacción "${id}" sin cambios (sigue PENDING en Wompi)`);
+        this.logger.debug(`Transacción "${id}" sin cambios (sigue PENDING en el proveedor de pagos)`);
       }
     }
 

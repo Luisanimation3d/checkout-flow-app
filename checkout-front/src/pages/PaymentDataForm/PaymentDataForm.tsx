@@ -38,6 +38,12 @@ interface PaymentDataFormProps {
   initialDeliveryValues?: DeliveryFormValues
   onClose: () => void
   onComplete: (card: CardFormValues, delivery: DeliveryFormValues) => void
+  // Opcionales: se disparan en cada cambio de campo (no solo al terminar el
+  // formulario) para que quien los use pueda reflejar el progreso en Redux y,
+  // de ahí, en localStorage — así un refresh a mitad del formulario no pierde
+  // lo ya tecleado (ver store/persistence.ts).
+  onCardChange?: (values: CardFormValues) => void
+  onDeliveryChange?: (values: DeliveryFormValues) => void
 }
 
 export const PaymentDataForm = ({
@@ -47,11 +53,22 @@ export const PaymentDataForm = ({
   initialDeliveryValues = INITIAL_DELIVERY_VALUES,
   onClose,
   onComplete,
+  onCardChange,
+  onDeliveryChange,
 }: PaymentDataFormProps) => {
   const [step, setStep] = useState<Step>(initialStep)
   const [cardValues, setCardValues] = useState<CardFormValues>(initialCardValues)
   const [deliveryValues, setDeliveryValues] = useState<DeliveryFormValues>(initialDeliveryValues)
   const [activeField, setActiveField] = useState<CardField | null>(null)
+
+  const handleCardChange = (values: CardFormValues) => {
+    setCardValues(values)
+    onCardChange?.(values)
+  }
+  const handleDeliveryChange = (values: DeliveryFormValues) => {
+    setDeliveryValues(values)
+    onDeliveryChange?.(values)
+  }
 
   useEffect(() => {
     if (isOpen) setStep(initialStep)
@@ -67,7 +84,7 @@ export const PaymentDataForm = ({
             <CreditCard values={cardValues} activeField={activeField} />
             <CardForm
               values={cardValues}
-              onChange={setCardValues}
+              onChange={handleCardChange}
               onFieldFocus={setActiveField}
               onFieldBlur={() => setActiveField(null)}
             />
@@ -78,7 +95,7 @@ export const PaymentDataForm = ({
               <RiArrowLeftLine /> Volver
             </button>
 
-            <DeliveryForm values={deliveryValues} onChange={setDeliveryValues} />
+            <DeliveryForm values={deliveryValues} onChange={handleDeliveryChange} />
           </>
         )
       }

@@ -19,7 +19,7 @@ const toDomain = (row: TransactionOrmEntity): Transaction => ({
   amountInCents: row.amountInCents,
   currency: row.currency,
   status: row.status as TransactionStatus,
-  wompiTransactionId: row.wompiTransactionId,
+  gatewayTransactionId: row.gatewayTransactionId,
   statusMessage: row.statusMessage,
 });
 

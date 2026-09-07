@@ -26,8 +26,8 @@ export class TransactionOrmEntity {
   @Column()
   status: string;
 
-  @Column({ name: 'wompi_transaction_id', type: 'varchar', nullable: true })
-  wompiTransactionId: string | null;
+  @Column({ name: 'gateway_transaction_id', type: 'varchar', nullable: true })
+  gatewayTransactionId: string | null;
 
   @Column({ name: 'status_message', type: 'varchar', nullable: true })
   statusMessage: string | null;

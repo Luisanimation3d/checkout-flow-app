@@ -5,7 +5,7 @@ describe('isCardholderNameValid', () => {
     expect(isCardholderNameValid('LUIS CORREA')).toBe(true)
   })
 
-  it('rejects a name shorter than 5 characters (Wompi minimum)', () => {
+  it('rejects a name shorter than 5 characters (gateway minimum)', () => {
     expect(isCardholderNameValid('LUIS')).toBe(false)
   })
 

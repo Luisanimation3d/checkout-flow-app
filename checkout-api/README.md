@@ -1,114 +1,93 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# checkout-api
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend del flujo de checkout: catálogo de productos, clientes, entregas y transacciones de pago. Construido con [NestJS](https://nestjs.com/) + [TypeORM](https://typeorm.io/) sobre PostgreSQL, siguiendo **Arquitectura Hexagonal (Ports & Adapters)** y **Railway Oriented Programming (ROP)** para los casos de uso.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Para la visión general del proyecto (flujo completo, modelo de datos, resultados de cobertura, links de despliegue) ver el [README raíz](../README.md).
 
-## Description
+## Arquitectura
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Cada módulo de dominio (`products`, `customers`, `deliveries`, `transactions`) se organiza en capas:
 
-## Project setup
-
-```bash
-$ npm install
+```
+<module>/
+  domain/           # Entidades, value objects, puertos (interfaces) y errores de dominio
+  application/       # Casos de uso — orquestan el dominio, sin conocer HTTP ni la DB
+  infrastructure/    # Adaptadores concretos (repositorios TypeORM, cliente HTTP del gateway de pago)
+  presentation/       # DTOs de entrada/salida (class-validator + Swagger)
+  *.controller.ts     # Capa HTTP — delega todo a los casos de uso
+  *.module.ts
 ```
 
-## Compile and run the project
+La lógica de negocio nunca vive en los controllers: cada caso de uso (`CreateTransactionUseCase`, `GetTransactionByIdUseCase`, etc.) es una clase inyectable independiente de NestJS/HTTP, y depende de **puertos** (interfaces) en vez de implementaciones concretas — por ejemplo `TransactionRepositoryPort` y `PaymentGatewayPort`, con sus adaptadores (`TransactionTypeOrmRepository`, `PaymentGatewayAdapter`) inyectados por token (`TRANSACTION_REPOSITORY`, `PAYMENT_GATEWAY`).
+
+**ROP**: los casos de uso devuelven `Result<T, E>` (`src/shared/core/result.ts`) en vez de lanzar excepciones para errores de negocio esperables (producto sin stock, datos inválidos, transacción no encontrada). Los controllers traducen `Result.fail` al código HTTP correcto (400/404); las excepciones reales quedan para fallos verdaderamente inesperados.
+
+## Modelo de datos
+
+Ver [README raíz § Modelo de datos](../README.md#modelo-de-datos).
+
+## Requisitos
+
+- Node.js 22+
+- PostgreSQL 14+ (local, Docker, o RDS)
+
+## Variables de entorno
+
+Copiar `.env.example` a `.env` y completar:
+
+| Variable | Descripción |
+|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Conexión a Postgres |
+| `DB_SSL` | `true` en RDS/producción (Postgres administrado exige TLS por defecto); `false` en local |
+| `CORS_ORIGIN` | Origen permitido (URL del frontend) |
+| `PORT` | Puerto HTTP (por defecto 3000) |
+| `PAYMENT_GATEWAY_BASE_URL` | URL base del sandbox UAT del proveedor de pagos |
+| `PAYMENT_GATEWAY_PUBLIC_KEY` / `PAYMENT_GATEWAY_PRIVATE_KEY` / `PAYMENT_GATEWAY_INTEGRITY_SECRET` | Credenciales del sandbox |
+
+La base de datos se sincroniza automáticamente en arranque (`synchronize: true`) y se siembra con productos de prueba — no hace falta correr migraciones ni crear un endpoint de creación de productos.
+
+## Instalación y ejecución
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
+npm run start:dev   # desarrollo, con watch
+npm run build        # compila a dist/
+npm run start:prod   # producción (node dist/main)
 ```
 
-## Run tests
+## Tests
+
+Suite unitaria con **Jest**, mockeando manualmente los puertos (sin tocar una base de datos real).
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run test        # unit tests
+npm run test:cov     # con reporte de cobertura
 ```
 
-## Deployment
+**Resultado más reciente: 25 test suites / 112 tests, todos en verde.**
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| Métrica | Cobertura |
+|---|---|
+| Statements | 99.63% |
+| Branches | 86.17% |
+| Functions | 97.46% |
+| Lines | 99.59% |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+(Umbral mínimo exigido en `jest.config.ts`: 80% en las 4 métricas.)
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+`@nestjs/common`, `@nestjs/config`, `@nestjs/typeorm` y `@nestjs/swagger` se mockean en `test/mocks/` porque se publican como ESM puro y rompen la transformación de `ts-jest` en capas profundas del paquete — los stubs solo exponen los símbolos (decoradores, `ConfigService`, etc.) que el código realmente usa.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Documentación de la API (Swagger)
 
-## Observability
+Con el servidor corriendo:
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+- UI interactiva: `/api-docs`
+- Spec OpenAPI (JSON): `/api-docs-json`
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+En el despliegue actual: **https://d322kj1aam7vzd.cloudfront.net/api-docs**
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+## Seguridad
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Tokenización de tarjeta 100% en el navegador**: el frontend cifra los datos de tarjeta (JWE, RSA-OAEP-256 + A256GCM) antes de que salgan del cliente. Este backend nunca recibe ni procesa un número de tarjeta en texto plano — el endpoint `POST /tokenization/card` solo reenvía el payload ya cifrado al proveedor de pagos (existe porque su sandbox UAT no habilita CORS para llamadas directas desde el navegador).
+- **Transición de estado atómica**: `transitionFromPending` actualiza con `WHERE status = 'PENDING'`, así que si dos requests concurrentes (p. ej. dos polls simultáneos del frontend) intentan resolver la misma transacción, solo una afecta una fila — evita decrementar stock dos veces por la misma compra.
+- **Conexión a RDS forzada por TLS** (`DB_SSL=true` en producción).

@@ -2,10 +2,10 @@ import { configureStore } from '@reduxjs/toolkit'
 import type { CardFormValues } from '@/types/card'
 import type { DeliveryFormValues } from '@/types/delivery'
 import type { Transaction } from '@/types/transaction'
-import { tokenizeCard } from '@/utils/wompi'
+import { tokenizeCard } from '@/utils/cardTokenization'
 import { pollTransaction, resetTransaction, submitPayment, transactionReducer } from './transactionSlice'
 
-jest.mock('@/utils/wompi', () => ({
+jest.mock('@/utils/cardTokenization', () => ({
   tokenizeCard: jest.fn(),
 }))
 
@@ -37,7 +37,7 @@ const pendingTransaction: Transaction = {
   amountInCents: 11400000,
   currency: 'COP',
   status: 'PENDING',
-  wompiTransactionId: 'wompi-1',
+  gatewayTransactionId: 'gateway-txn-1',
   statusMessage: null,
 }
 

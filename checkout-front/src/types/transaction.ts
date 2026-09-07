@@ -9,7 +9,7 @@ export interface Transaction {
   amountInCents: number
   currency: string
   status: TransactionApiStatus
-  wompiTransactionId: string | null
+  gatewayTransactionId: string | null
   statusMessage: string | null
 }
 

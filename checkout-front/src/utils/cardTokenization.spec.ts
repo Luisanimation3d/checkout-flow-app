@@ -1,4 +1,4 @@
-import type { TokenizeCardInput } from './wompi'
+import type { TokenizeCardInput } from './cardTokenization'
 
 // jest.mock se hoistea sobre el resto del archivo (vía babel-plugin-jest-hoist).
 // Esa misma herramienta solo permite que la factory referencie variables
@@ -23,10 +23,10 @@ const sampleInput: TokenizeCardInput = {
   cardHolder: 'LUIS CORREA',
 }
 
-// jest.resetModules() + import dinámico: wompi.ts cachea la llave pública en una
+// jest.resetModules() + import dinámico: cardTokenization.ts cachea la llave pública en una
 // variable de módulo (cachedPublicKeyPem), así que cada test necesita partir
 // de un módulo fresco para no heredar el caché de tests anteriores.
-const importWompi = () => import('./wompi')
+const importCardTokenization = () => import('./cardTokenization')
 
 describe('tokenizeCard', () => {
   let fetchMock: jest.Mock
@@ -42,7 +42,7 @@ describe('tokenizeCard', () => {
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ publicKey: 'PEM_KEY' }) })
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ token: 'tok_123' }) })
 
-    const { tokenizeCard } = await importWompi()
+    const { tokenizeCard } = await importCardTokenization()
     const token = await tokenizeCard(sampleInput)
 
     expect(token).toBe('tok_123')
@@ -56,7 +56,7 @@ describe('tokenizeCard', () => {
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ publicKey: 'PEM_KEY' }) })
       .mockResolvedValue({ ok: true, json: () => Promise.resolve({ token: 'tok_123' }) })
 
-    const { tokenizeCard } = await importWompi()
+    const { tokenizeCard } = await importCardTokenization()
     await tokenizeCard(sampleInput)
     await tokenizeCard(sampleInput)
 
@@ -69,12 +69,12 @@ describe('tokenizeCard', () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 502,
-      json: () => Promise.resolve({ message: 'No pudimos conectar con Wompi' }),
+      json: () => Promise.resolve({ message: 'No pudimos conectar con el proveedor de pagos' }),
     })
 
-    const { tokenizeCard } = await importWompi()
+    const { tokenizeCard } = await importCardTokenization()
 
-    await expect(tokenizeCard(sampleInput)).rejects.toThrow('No pudimos conectar con Wompi')
+    await expect(tokenizeCard(sampleInput)).rejects.toThrow('No pudimos conectar con el proveedor de pagos')
   })
 
   it('falls back to a generic message when the public-key error response has no JSON body', async () => {
@@ -84,14 +84,14 @@ describe('tokenizeCard', () => {
       json: () => Promise.reject(new Error('invalid json')),
     })
 
-    const { tokenizeCard } = await importWompi()
+    const { tokenizeCard } = await importCardTokenization()
 
     await expect(tokenizeCard(sampleInput)).rejects.toThrow(
       'No pudimos preparar el cifrado de la tarjeta. Intenta de nuevo.',
     )
   })
 
-  it('throws with the real Wompi rejection reason when card tokenization is rejected', async () => {
+  it('throws with the real gateway rejection reason when card tokenization is rejected', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ publicKey: 'PEM_KEY' }) })
       .mockResolvedValueOnce({
@@ -103,7 +103,7 @@ describe('tokenizeCard', () => {
           }),
       })
 
-    const { tokenizeCard } = await importWompi()
+    const { tokenizeCard } = await importCardTokenization()
 
     await expect(tokenizeCard(sampleInput)).rejects.toThrow(
       'El número de tarjeta usado no es aceptado en el ambiente de pruebas.',
@@ -115,7 +115,7 @@ describe('tokenizeCard', () => {
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ publicKey: 'PEM_KEY' }) })
       .mockResolvedValueOnce({ ok: false, status: 422, json: () => Promise.resolve({}) })
 
-    const { tokenizeCard } = await importWompi()
+    const { tokenizeCard } = await importCardTokenization()
 
     await expect(tokenizeCard(sampleInput)).rejects.toThrow(
       'La tarjeta fue rechazada al tokenizar. Verifica los datos.',

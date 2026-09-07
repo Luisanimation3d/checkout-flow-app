@@ -10,7 +10,7 @@ import { Result } from '../../shared/core/result';
 import { ProductOutOfStockError } from '../domain/product-out-of-stock.error';
 import type { Transaction } from '../domain/transaction';
 import type { TransactionRepositoryPort } from '../domain/transaction-repository.port';
-import type { WompiChargeResult, WompiGatewayPort } from '../domain/wompi-gateway.port';
+import type { GatewayChargeResult, PaymentGatewayPort } from '../domain/payment-gateway.port';
 import { CreateTransactionUseCase } from './create-transaction.use-case';
 
 const mockProduct: Product = {
@@ -50,7 +50,7 @@ const pendingTransaction: Transaction = {
   amountInCents: 11400000,
   currency: 'COP',
   status: 'PENDING',
-  wompiTransactionId: null,
+  gatewayTransactionId: null,
   statusMessage: null,
 };
 
@@ -75,7 +75,7 @@ const validInput = {
 describe('CreateTransactionUseCase', () => {
   let productRepository: jest.Mocked<ProductRepositoryPort>;
   let transactionRepository: jest.Mocked<TransactionRepositoryPort>;
-  let wompiGateway: jest.Mocked<WompiGatewayPort>;
+  let paymentGateway: jest.Mocked<PaymentGatewayPort>;
   let findOrCreateCustomer: { execute: jest.Mock };
   let createDelivery: { execute: jest.Mock };
   let useCase: CreateTransactionUseCase;
@@ -91,7 +91,7 @@ describe('CreateTransactionUseCase', () => {
       findById: jest.fn(),
       transitionFromPending: jest.fn(),
     };
-    wompiGateway = {
+    paymentGateway = {
       createCardTransaction: jest.fn(),
       getTransactionStatus: jest.fn(),
       getTokenizationPublicKey: jest.fn(),
@@ -105,12 +105,12 @@ describe('CreateTransactionUseCase', () => {
       findOrCreateCustomer as unknown as FindOrCreateCustomerUseCase,
       createDelivery as unknown as CreateDeliveryUseCase,
       transactionRepository,
-      wompiGateway,
+      paymentGateway,
     );
   });
 
-  const approvedCharge: WompiChargeResult = {
-    wompiTransactionId: 'wompi-1',
+  const approvedCharge: GatewayChargeResult = {
+    gatewayTransactionId: 'gateway-txn-1',
     status: 'APPROVED',
     statusMessage: null,
   };
@@ -134,7 +134,7 @@ describe('CreateTransactionUseCase', () => {
     expect(transactionRepository.create).not.toHaveBeenCalled();
   });
 
-  it('fails when customer data is invalid, without touching Wompi', async () => {
+  it('fails when customer data is invalid, without touching the gateway', async () => {
     findOrCreateCustomer.execute.mockResolvedValue(
       Result.fail(new InvalidCustomerDataError('bad email')),
     );
@@ -144,10 +144,10 @@ describe('CreateTransactionUseCase', () => {
     expect(result.isFailure).toBe(true);
     if (result.isFailure) expect(result.error).toBeInstanceOf(InvalidCustomerDataError);
     expect(transactionRepository.create).not.toHaveBeenCalled();
-    expect(wompiGateway.createCardTransaction).not.toHaveBeenCalled();
+    expect(paymentGateway.createCardTransaction).not.toHaveBeenCalled();
   });
 
-  it('fails when delivery data is invalid, without touching Wompi', async () => {
+  it('fails when delivery data is invalid, without touching the gateway', async () => {
     createDelivery.execute.mockResolvedValue(
       Result.fail(new InvalidDeliveryDataError('bad address')),
     );
@@ -156,11 +156,11 @@ describe('CreateTransactionUseCase', () => {
 
     expect(result.isFailure).toBe(true);
     if (result.isFailure) expect(result.error).toBeInstanceOf(InvalidDeliveryDataError);
-    expect(wompiGateway.createCardTransaction).not.toHaveBeenCalled();
+    expect(paymentGateway.createCardTransaction).not.toHaveBeenCalled();
   });
 
-  it('creates the transaction as PENDING before charging Wompi, using the server-recalculated amount', async () => {
-    wompiGateway.createCardTransaction.mockResolvedValue(approvedCharge);
+  it('creates the transaction as PENDING before charging the gateway, using the server-recalculated amount', async () => {
+    paymentGateway.createCardTransaction.mockResolvedValue(approvedCharge);
     transactionRepository.transitionFromPending.mockResolvedValue({
       transaction: { ...pendingTransaction, status: 'APPROVED' },
       didTransition: true,
@@ -179,7 +179,7 @@ describe('CreateTransactionUseCase', () => {
         status: 'PENDING',
       }),
     );
-    expect(wompiGateway.createCardTransaction).toHaveBeenCalledWith(
+    expect(paymentGateway.createCardTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         amountInCents: 11400000,
         currency: 'COP',
@@ -191,7 +191,7 @@ describe('CreateTransactionUseCase', () => {
   });
 
   it('decreases stock when the charge is approved and this call won the transition', async () => {
-    wompiGateway.createCardTransaction.mockResolvedValue(approvedCharge);
+    paymentGateway.createCardTransaction.mockResolvedValue(approvedCharge);
     transactionRepository.transitionFromPending.mockResolvedValue({
       transaction: { ...pendingTransaction, status: 'APPROVED' },
       didTransition: true,
@@ -204,7 +204,7 @@ describe('CreateTransactionUseCase', () => {
   });
 
   it('does NOT decrease stock when approved but another concurrent call already won the transition', async () => {
-    wompiGateway.createCardTransaction.mockResolvedValue(approvedCharge);
+    paymentGateway.createCardTransaction.mockResolvedValue(approvedCharge);
     transactionRepository.transitionFromPending.mockResolvedValue({
       transaction: { ...pendingTransaction, status: 'APPROVED' },
       didTransition: false,
@@ -216,8 +216,8 @@ describe('CreateTransactionUseCase', () => {
   });
 
   it('does not decrease stock when the charge is declined, but still returns success', async () => {
-    wompiGateway.createCardTransaction.mockResolvedValue({
-      wompiTransactionId: 'wompi-1',
+    paymentGateway.createCardTransaction.mockResolvedValue({
+      gatewayTransactionId: 'gateway-txn-1',
       status: 'DECLINED',
       statusMessage: 'Fondos insuficientes',
     });
@@ -233,9 +233,9 @@ describe('CreateTransactionUseCase', () => {
     if (result.isSuccess) expect(result.value.status).toBe('DECLINED');
   });
 
-  it('marks the transaction as ERROR and fails cleanly when Wompi communication throws', async () => {
-    wompiGateway.createCardTransaction.mockRejectedValue(
-      new Error('Unable to fetch Wompi merchant info: 500'),
+  it('marks the transaction as ERROR and fails cleanly when gateway communication throws', async () => {
+    paymentGateway.createCardTransaction.mockRejectedValue(
+      new Error('Unable to fetch gateway merchant info: 500'),
     );
     transactionRepository.transitionFromPending.mockResolvedValue({
       transaction: { ...pendingTransaction, status: 'ERROR' },
@@ -246,11 +246,11 @@ describe('CreateTransactionUseCase', () => {
 
     expect(result.isFailure).toBe(true);
     if (result.isFailure) {
-      expect(result.error.message).toBe('Unable to fetch Wompi merchant info: 500');
+      expect(result.error.message).toBe('Unable to fetch gateway merchant info: 500');
     }
     expect(transactionRepository.transitionFromPending).toHaveBeenCalledWith(
       pendingTransaction.id,
-      expect.objectContaining({ status: 'ERROR', wompiTransactionId: null }),
+      expect.objectContaining({ status: 'ERROR', gatewayTransactionId: null }),
     );
     expect(productRepository.decreaseStock).not.toHaveBeenCalled();
   });

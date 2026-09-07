@@ -22,6 +22,12 @@ import { TransactionsModule } from './transactions/transactions.module';
         database: configService.get<string>('DB_NAME'),
         autoLoadEntities: true,
         synchronize: true, // solo en desarrollo
+        // RDS exige SSL por defecto (rds.force_ssl=1); localmente no hay
+        // certificado que validar, así que esto solo se activa si DB_SSL=true.
+        ssl:
+          configService.get<string>('DB_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
       }),
     }),
     ProductsModule,

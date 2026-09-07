@@ -4,7 +4,7 @@ export const TRANSACTION_REPOSITORY = Symbol('TRANSACTION_REPOSITORY');
 
 export interface TransactionStatusUpdate {
   status: TransactionStatus;
-  wompiTransactionId: string | null;
+  gatewayTransactionId: string | null;
   statusMessage: string | null;
 }
 
